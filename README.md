@@ -1,6 +1,6 @@
 ## John B Joseph
 
-**Co-founder & CPTO, Purplecop Security** · India
+**Co-founder & CPTO, Purplecop Security** · [johnbjoseph-cybersec.github.io](https://johnbjoseph-cybersec.github.io/)
 
 AI security · AI governance · Post-quantum readiness
 
@@ -54,4 +54,4 @@ TryHackMe Top 1%
 Virtual keynotes, panels and podcasts on securing AI agents, operationalising ISO/IEC 42001 and
 the EU AI Act, and post-quantum migration for security and GRC leaders.
 
-**Contact:** [linkedin.com/in/john-bj](https://www.linkedin.com/in/john-bj/)
+**Website:** [johnbjoseph-cybersec.github.io](https://johnbjoseph-cybersec.github.io/) · **Contact:** [linkedin.com/in/john-bj](https://www.linkedin.com/in/john-bj/)
