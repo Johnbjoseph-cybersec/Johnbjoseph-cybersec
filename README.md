@@ -27,8 +27,7 @@ evidence shows it is working?
 
 | Project | |
 |---|---|
-| [**GRC Practice Lab**](https://grclab.purplecop.io) | 400+ controls across 9 frameworks, 11 guided scenarios, 12 portfolio projects and a full ISO 27001 Lead Implementer course. Free, no signup, runs entirely in the browser. |
-| [**GRC-Playground**](https://github.com/Johnbjoseph-cybersec/GRC-Playground) | Hands-on labs for controls, policy as code and continuous authorization. |
+| [**GRC Practice Lab**](https://grclab.purplecop.io) | 400+ controls across 9 frameworks, 11 guided scenarios, 12 portfolio projects and a full ISO 27001 Lead Implementer course. Free, no signup, runs entirely in the browser. ([source](https://github.com/Johnbjoseph-cybersec/Johnbjoseph-cybersec.github.io)) |
 | [**GRC Made Simple templates**](https://github.com/Johnbjoseph-cybersec/grc-made-simple-templates) | Practitioner-grade templates for ISO 27001, ISO 42001, SOC 2 and NIST CSF. |
 
 ---
