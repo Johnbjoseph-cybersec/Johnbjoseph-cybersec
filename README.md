@@ -27,17 +27,17 @@ evidence shows it is working?
 
 | Project | |
 |---|---|
-| [**GRC Practice Lab**](https://grclab.purplecop.io) | 400+ controls across 9 frameworks, 11 guided scenarios, 12 portfolio projects and a full ISO 27001 Lead Implementer course. Free, no signup, runs entirely in the browser. ([source](https://github.com/Johnbjoseph-cybersec/Johnbjoseph-cybersec.github.io)) |
+| [**GRC Practice Lab**](https://grclab.purplecop.io) | 400+ controls across 9 frameworks, 11 guided scenarios, 12 portfolio projects and a full ISO 27001 Lead Implementer course. Free with an account. ([source](https://github.com/Johnbjoseph-cybersec/Johnbjoseph-cybersec.github.io)) |
 | [**GRC Made Simple templates**](https://github.com/Johnbjoseph-cybersec/grc-made-simple-templates) | Practitioner-grade templates for ISO 27001, ISO 42001, SOC 2 and NIST CSF. |
 
 ---
 
 ### Teaching
 
-**GRC Made Simple** has taught GRC to 7,500+ people across 34+ countries, for free.
+**GRC Made Simple** teaches GRC for free: the GRC Practice Lab has 10,000+ active users in 34 countries.
 
 - YouTube: [youtube.com/@GRCMadeSimple](https://www.youtube.com/@GRCMadeSimple)
-- Newsletter: [GRC Made Simple Daily](https://www.linkedin.com/newsletters/grc-made-simple-7493284804747251713/), a weekday brief on AI security, AI governance and PQC
+- Newsletter: [GRC Made Simple Daily](https://www.linkedin.com/newsletters/grc-made-simple-7493284804747251713/), a daily brief on AI security, AI governance and PQC
 
 ---
 
