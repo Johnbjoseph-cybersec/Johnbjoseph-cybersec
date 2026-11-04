@@ -34,7 +34,7 @@ evidence shows it is working?
 
 ### Teaching
 
-**GRC Made Simple** teaches GRC for free: the GRC Practice Lab has 10,000+ active users in 34 countries.
+**GRC Made Simple** teaches GRC for free: the GRC Practice Lab has 11,000+ active users in 34 countries.
 
 - YouTube: [youtube.com/@GRCMadeSimple](https://www.youtube.com/@GRCMadeSimple)
 - Newsletter: [GRC Made Simple Daily](https://www.linkedin.com/newsletters/grc-made-simple-7493284804747251713/), a daily brief on AI security, AI governance and PQC
