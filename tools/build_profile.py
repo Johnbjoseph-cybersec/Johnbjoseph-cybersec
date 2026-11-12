@@ -175,6 +175,19 @@ def tables(data):
 
 
 # ------------------------------------------------------------------ README
+def _bust(md):
+    """Append ?v=<content hash> to every local asset path so GitHub's image cache (camo) refetches changed SVGs."""
+    import hashlib, re as _re
+    def rep(m):
+        path = m.group(2)
+        full = os.path.join(ROOT, path)
+        if not os.path.exists(full):
+            return m.group(0)
+        h = hashlib.sha256(open(full, "rb").read()).hexdigest()[:8]
+        return '%s"%s?v=%s"' % (m.group(1), path, h)
+    return _re.sub(r'((?:src|srcset)=)"(assets/[^"?]+\.svg)"', rep, md)
+
+
 def pic(name, alt, attrs):
     return ('<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/%s.svg">'
             '<img src="assets/light/%s.svg" alt="%s" %s></picture>' % (name, name, alt.replace("&", "&amp;"), attrs))
@@ -203,7 +216,7 @@ def main():
     tpl = tpl.replace("{{asof}}", datetime.date.today().isoformat())
     out = re.sub(r"\{\{(\w+) ([^}]*)\}\}", macro, tpl)
     assert chr(167) not in out
-    write("README.md", out)
+    write("README.md", _bust(out))
     print("ok: %d ledger rows, %s" % (len(data), counts))
 
 
