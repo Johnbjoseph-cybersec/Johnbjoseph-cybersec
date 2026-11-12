@@ -139,8 +139,8 @@ def icon(name, x, y, size, color):
 def hero(c):
     """Name, title and three lane tags share one left edge (PAD); tags sit on one baseline,
     each a dot + label, joined by equal-length lines so the gaps are identical."""
-    W, H = 840, 300
-    PAD = 48
+    W, H = 840, 246
+    PAD = 44
     b = []
     b.append(
         '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="%s"/>'
@@ -149,24 +149,24 @@ def hero(c):
     b.append('<rect x="0.5" y="0.5" width="%d" height="%d" rx="22" fill="url(#g)" stroke="%s"/>' % (W - 1, H - 1, c["hair"]))
 
     # name: cap top sits PAD from the top edge. J has a small left bearing, removed so ink starts at PAD.
-    ns = 88
+    ns = 60
     f = _G["b"]
     k = ns / f["upm"]
     cap = 0.70 * ns
     nb = PAD + cap
     bearing = _left_bearing("b", "J", ns)
-    b.append(text(PAD - bearing, nb, "John B Joseph", "b", ns, c["ink"], track=-1.6))
-    ts = 30
-    tb = nb + 52
+    b.append(text(PAD - bearing, nb, "John B Joseph", "b", ns, c["ink"], track=-1.1))
+    ts = 22
+    tb = nb + 40
     b.append(text(PAD - _left_bearing("m", "C", ts), tb, "Co-founder & CPTO, Purplecop Security", "m", ts, c["body"]))
 
     # lanes: a hairline (with a short brand cap, as in the footer rule), then the three tags
-    ry = tb + 40
+    ry = tb + 32
     b.append('<path d="M%d %s H%d" stroke="%s" stroke-width="1"/>' % (PAD, _fmt(ry + 0.5), W - PAD, c["hair"]))
     b.append('<rect x="%d" y="%s" width="46" height="4" rx="2" fill="%s"/>' % (PAD, _fmt(ry - 1.5), c["brand"]))
     labels = ["AI security", "AI governance", "Post-quantum readiness"]
-    ls, dot_r, gap_dt = 23, 6, 12
-    lb = ry + 54                             # lane baseline
+    ls, dot_r, gap_dt = 18, 5, 10
+    lb = ry + 44                             # lane baseline
     cy = lb - 0.30 * ls                      # dot centre = optical middle of the lowercase body
     unit = [2 * dot_r + gap_dt + width(t, "s", ls) for t in labels]
     gap = ((W - 2 * PAD) - sum(unit)) / 2.0  # identical gap between tags; first starts at PAD, last ends at W-PAD
@@ -196,25 +196,25 @@ def pill(label, ic, c, h=32):
 
 
 def band(num, title, caption, c):
-    W, H = 840, 72
+    W, H = 840, 56
     b = '<defs><clipPath id="k"><rect x="0.5" y="0.5" width="%d" height="%d" rx="14"/></clipPath></defs>' % (W - 1, H - 1)
     b += '<rect x="0.5" y="0.5" width="%d" height="%d" rx="14" fill="%s"/>' % (W - 1, H - 1, c["panel"])
     b += '<rect x="0" y="0" width="7" height="%d" fill="%s" clip-path="url(#k)"/>' % (H, c["brand"])
     b += '<rect x="0.5" y="0.5" width="%d" height="%d" rx="14" fill="none" stroke="%s"/>' % (W - 1, H - 1, c["hair"])
-    b += text(30, 45, num, "m", 20, c["accent"], track=1)
-    b += text(76, 48, title, "b", 36, c["ink"], track=-0.4)
+    b += text(28, 35, num, "m", 15, c["accent"], track=1)
+    b += text(62, 37, title, "b", 24, c["ink"], track=-0.3)
     if caption:
-        b += text(W - 26, 44, caption, "m", 19, c["mute"], anchor="end")
+        b += text(W - 24, 34, caption, "m", 14, c["mute"], anchor="end")
     return svg(W, H, b, "%s %s" % (title, caption or "") if caption else title)
 
 
 def subband(title, caption, c):
-    W, H = 840, 52
+    W, H = 840, 40
     b = '<path d="M0.5 %s H%d" stroke="%s" stroke-width="1"/>' % (H - 0.5, W, c["hair"])
-    b += '<rect x="0" y="12" width="5" height="26" rx="2.5" fill="%s"/>' % c["brand"]
-    b += text(20, 34, title, "s", 28, c["ink"], track=-0.2)
+    b += '<rect x="0" y="10" width="4" height="20" rx="2" fill="%s"/>' % c["brand"]
+    b += text(16, 27, title, "s", 19, c["ink"], track=-0.1)
     if caption:
-        b += text(W, 33, caption, "m", 20, c["mute"], anchor="end")
+        b += text(W, 26, caption, "m", 14, c["mute"], anchor="end")
     return svg(W, H, b, "%s. %s" % (title, caption) if caption else title)
 
 def chip(label, c, h=28):
