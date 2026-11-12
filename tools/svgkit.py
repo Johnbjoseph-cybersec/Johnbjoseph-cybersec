@@ -164,18 +164,18 @@ def hero(c):
     ry = tb + 32
     b.append('<path d="M%d %s H%d" stroke="%s" stroke-width="1"/>' % (PAD, _fmt(ry + 0.5), W - PAD, c["hair"]))
     b.append('<rect x="%d" y="%s" width="46" height="4" rx="2" fill="%s"/>' % (PAD, _fmt(ry - 1.5), c["brand"]))
-    labels = ["AI security", "AI governance", "Post-quantum readiness"]
+    labels = ["AI security", "AI governance", "Post-quantum readiness", "OT security"]
     ls, dot_r, gap_dt = 18, 5, 10
     lb = ry + 44                             # lane baseline
     cy = lb - 0.30 * ls                      # dot centre = optical middle of the lowercase body
     unit = [2 * dot_r + gap_dt + width(t, "s", ls) for t in labels]
-    gap = ((W - 2 * PAD) - sum(unit)) / 2.0  # identical gap between tags; first starts at PAD, last ends at W-PAD
+    gap = ((W - 2 * PAD) - sum(unit)) / float(len(labels) - 1)  # identical gap between tags; first starts at PAD, last ends at W-PAD
     x = PAD
     for t, u in zip(labels, unit):
         b.append('<circle cx="%s" cy="%s" r="%d" fill="%s"/>' % (_fmt(x + dot_r), _fmt(cy), dot_r, c["brand"] if c["mode"] == "dark" else c["accent"]))
         b.append(text(x + 2 * dot_r + gap_dt, lb, t, "s", ls, c["ink"]))
         x += u + gap
-    return svg(W, H, "".join(b), "John B Joseph. Co-founder and CPTO, Purplecop Security. AI security, AI governance, post-quantum readiness.")
+    return svg(W, H, "".join(b), "John B Joseph. Co-founder and CPTO, Purplecop Security. AI security, AI governance, post-quantum readiness, OT security.")
 
 
 def _left_bearing(w, ch, size):
