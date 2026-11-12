@@ -56,7 +56,7 @@ CREDENTIALS = [
     "CCEP", "PrivacyOps", "AI Security & Governance", "AWS Solutions Architect", "Qualys VMDR",
     "TryHackMe Top 1%",
 ]
-TEMPLATE_CHIPS = ["ISO 27001", "ISO 42001", "SOC 2", "NIST CSF"]
+TEMPLATE_CHIPS = ["EU AI Act", "ISO 42001", "PQC", "AI vendor risk", "DPDP"]
 STATIC_BANDS = [("built", "01", "Built", ""), ("focus", "03", "Focus", ""), ("speaking", "06", "Speaking", "")]
 
 
