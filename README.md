@@ -55,7 +55,7 @@ I lead product and technology at Purplecop Security, where we build compliance a
 
 <p>
   <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/panel-credentials.svg"><img src="assets/light/panel-credentials.svg" alt="Credentials: ISO/IEC 27001:2022 Lead Auditor, ISO/IEC 42001:2023 Lead Auditor, ISO/IEC 27701 Lead Auditor, CCEP, PrivacyOps, AI Security and Governance, AWS Solutions Architect, Qualys VMDR, TryHackMe Top 1%" width="406"></picture>
-  <a href="https://grclab.purplecop.io"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/panel-teaching.svg"><img src="assets/light/panel-teaching.svg" alt="Teaching: 11,000+ active users in 34 countries. GRC Made Simple teaches GRC for free: the GRC Practice Lab, a YouTube channel and a daily newsletter brief on AI security, AI governance and PQC." width="406"></picture></a>
+  <a href="https://grclab.purplecop.io"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/panel-teaching.svg"><img src="assets/light/panel-teaching.svg" alt="Teaching: 12,000+ active users in 34 countries. GRC Made Simple teaches GRC for free: the GRC Practice Lab, a YouTube channel and a daily newsletter brief on AI security, AI governance and PQC." width="406"></picture></a>
 </p>
 
 **GRC Made Simple** on YouTube: [youtube.com/@GRCMadeSimple](https://www.youtube.com/@GRCMadeSimple) &nbsp;|&nbsp; Newsletter: [GRC Made Simple Daily](https://www.linkedin.com/newsletters/grc-made-simple-7493284804747251713/), a daily brief on AI security, AI governance and PQC

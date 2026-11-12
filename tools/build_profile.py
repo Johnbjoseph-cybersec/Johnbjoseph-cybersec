@@ -92,7 +92,7 @@ def build_static(counts):
         themed("focus-" + key, lambda c, l=label, i=ic, t=body: K.text_card(l, i, t, c, fh))
     ph = max(K.credentials_height(CREDENTIALS), K.stat_card_height(TEACH_TEXT))
     themed("panel-credentials", lambda c: K.credentials_card("04", "Credentials", CREDENTIALS, c, ph))
-    themed("panel-teaching", lambda c: K.stat_card("05", "Teaching", "11,000+", ("active users", "in 34 countries"), TEACH_TEXT, c, ph))
+    themed("panel-teaching", lambda c: K.stat_card("05", "Teaching", "12,000+", ("active users", "in 34 countries"), TEACH_TEXT, c, ph))
     for label in TEMPLATE_CHIPS:
         themed("chip-" + slug(label), lambda c, l=label: K.chip(l, c))
     themed("rule", K.rule)

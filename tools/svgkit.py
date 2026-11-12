@@ -137,49 +137,52 @@ def icon(name, x, y, size, color):
 
 # ---------------------------------------------------------------- components
 def hero(c):
-    W, H = 840, 372
+    """Name, title and three lane tags share one left edge (PAD); tags sit on one baseline,
+    each a dot + label, joined by equal-length lines so the gaps are identical."""
+    W, H = 840, 300
+    PAD = 48
     b = []
     b.append(
         '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="%s"/>'
         '<stop offset="1" stop-color="%s"/></linearGradient></defs>' % (c["ground"], c["ground2"])
     )
     b.append('<rect x="0.5" y="0.5" width="%d" height="%d" rx="22" fill="url(#g)" stroke="%s"/>' % (W - 1, H - 1, c["hair"]))
-    # crosswalk motif: provisions (left) mapped onto frameworks (right). Decorative, faint.
-    lx, rx_ = 586, 786
-    ly = [46, 76, 106, 136, 166]
-    ry = [58, 106, 154]
-    pairs = [(0, 0), (1, 0), (1, 1), (2, 1), (3, 1), (3, 2), (4, 2), (2, 0), (4, 1)]
-    for i, j in pairs:
-        mx = (lx + rx_) / 2
-        b.append(
-            '<path d="M%d %d C%d %d %d %d %d %d" fill="none" stroke="%s" stroke-opacity="%s" stroke-width="1.3"/>'
-            % (lx, ly[i], mx, ly[i], mx, ry[j], rx_, ry[j], c["line"], "0.75" if (i + j) % 2 == 0 else "0.38")
-        )
-    for y in ly:
-        b.append('<circle cx="%d" cy="%d" r="4.2" fill="%s" stroke="%s" stroke-width="1.6"/>' % (lx, y, c["node"], c["accent"]))
-    for y in ry:
-        b.append('<rect x="%d" y="%d" width="10" height="10" rx="2" fill="%s" stroke="%s" stroke-width="1.6"/>' % (rx_ - 5, y - 5, c["accent"], c["accent"]))
-    b.append(text(lx - 4, 26, "PROVISIONS", "s", 11, c["mute"], track=1.8))
-    b.append(text(rx_ + 5, 26, "FRAMEWORKS", "s", 11, c["mute"], anchor="end", track=1.8))
 
-    # name + title
-    b.append(text(44, 150, "John B Joseph", "b", 72, c["ink"], track=-1.2))
-    b.append(text(46, 204, "Co-founder & CPTO, Purplecop Security", "m", 28, c["body"]))
+    # name: cap top sits PAD from the top edge. J has a small left bearing, removed so ink starts at PAD.
+    ns = 88
+    f = _G["b"]
+    k = ns / f["upm"]
+    cap = 0.70 * ns
+    nb = PAD + cap
+    bearing = _left_bearing("b", "J", ns)
+    b.append(text(PAD - bearing, nb, "John B Joseph", "b", ns, c["ink"], track=-1.6))
+    ts = 30
+    tb = nb + 52
+    b.append(text(PAD - _left_bearing("m", "C", ts), tb, "Co-founder & CPTO, Purplecop Security", "m", ts, c["body"]))
 
-    # three lanes meeting at one control with evidence
-    busy = 268
-    lanes = [("AI security", 46), ("AI governance", 236), ("Post-quantum readiness", 470)]
-    endx = 796
-    b.append('<path d="M46 %d H%d" stroke="%s" stroke-width="2" stroke-opacity="0.9" fill="none"/>' % (busy, endx - 14, c["line"]))
-    for k, (lab, x) in enumerate(lanes):
-        b.append('<path d="M%d %d V%d" stroke="%s" stroke-width="2" fill="none"/>' % (x, busy, busy + 22, c["line"]))
-        b.append('<circle cx="%d" cy="%d" r="6" fill="%s"/>' % (x, busy, c["brand"] if c["mode"] == "dark" else c["accent"]))
-        b.append(text(x, busy + 58, lab, "s", 24, c["ink"]))
-    b.append('<circle cx="%d" cy="%d" r="13" fill="%s" stroke="%s" stroke-width="2.4"/>' % (endx, busy, c["node"], c["accent"]))
-    b.append(icon("check", endx - 7.5, busy - 7.5, 15, c["accent"]))
-    b.append(text(endx + 13, busy - 24, "CONTROL + EVIDENCE", "s", 12, c["mute"], anchor="end", track=2.2))
+    # lanes: a hairline (with a short brand cap, as in the footer rule), then the three tags
+    ry = tb + 40
+    b.append('<path d="M%d %s H%d" stroke="%s" stroke-width="1"/>' % (PAD, _fmt(ry + 0.5), W - PAD, c["hair"]))
+    b.append('<rect x="%d" y="%s" width="46" height="4" rx="2" fill="%s"/>' % (PAD, _fmt(ry - 1.5), c["brand"]))
+    labels = ["AI security", "AI governance", "Post-quantum readiness"]
+    ls, dot_r, gap_dt = 23, 6, 12
+    lb = ry + 54                             # lane baseline
+    cy = lb - 0.30 * ls                      # dot centre = optical middle of the lowercase body
+    unit = [2 * dot_r + gap_dt + width(t, "s", ls) for t in labels]
+    gap = ((W - 2 * PAD) - sum(unit)) / 2.0  # identical gap between tags; first starts at PAD, last ends at W-PAD
+    x = PAD
+    for t, u in zip(labels, unit):
+        b.append('<circle cx="%s" cy="%s" r="%d" fill="%s"/>' % (_fmt(x + dot_r), _fmt(cy), dot_r, c["brand"] if c["mode"] == "dark" else c["accent"]))
+        b.append(text(x + 2 * dot_r + gap_dt, lb, t, "s", ls, c["ink"]))
+        x += u + gap
     return svg(W, H, "".join(b), "John B Joseph. Co-founder and CPTO, Purplecop Security. AI security, AI governance, post-quantum readiness.")
 
+
+def _left_bearing(w, ch, size):
+    """Distance from the glyph origin to its first ink, from the outline's smallest x."""
+    d = _G[w]["g"][ch][1]
+    xs = [float(v) for m in re.finditer(r"[MLQC]([^MLQCZHV]*)", d) for v in re.findall(r"-?\d*\.?\d+", m.group(1))[0::2]]
+    return (min(xs) if xs else 0) * size / _G[w]["upm"]
 
 def pill(label, ic, c, h=32):
     fs = 13.5
