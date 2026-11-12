@@ -96,7 +96,7 @@ def build_static(counts):
     for label in TEMPLATE_CHIPS:
         themed("chip-" + slug(label), lambda c, l=label: K.chip(l, c))
     themed("rule", K.rule)
-    for lab, val in [("provisions", "48"), ("mappings", "157"), ("controls", "400+"), ("frameworks", "9"),
+    for lab, val in [("provisions", "48"), ("mappings", "157"), ("provisions", "99"), ("mappings", "285"), ("controls", "387"), ("profiles", "3"), ("controls", "400+"), ("frameworks", "9"),
                      ("guided scenarios", "11"), ("portfolio projects", "12")]:
         write("assets/badges/%s-%s.svg" % (slug(val), slug(lab)), K.badge(val, lab))
 
