@@ -48,6 +48,8 @@ BASE_CSS = (
     ".tw{animation:tw 5.5s ease-in-out infinite}"
     ".sl{animation:sl 7s ease-in-out infinite alternate}"
     "@keyframes tr{to{stroke-dashoffset:-1}}"
+    "@keyframes icd{0%{stroke-dashoffset:1}35%,80%{stroke-dashoffset:0}100%{stroke-dashoffset:-1}}"
+    "@keyframes wv{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}"
     "@keyframes trr{to{stroke-dashoffset:1}}"
     "@media (prefers-reduced-motion:reduce){*{animation:none!important}}"
 )
@@ -55,6 +57,31 @@ BASE_CSS = (
 
 def svg(W, H, body, title, css=""):
     return K.svg(W, H, "<style>%s%s</style>%s" % (BASE_CSS, css, body), title)
+
+
+def tracer(W, H, rx, c, seed, dash=.07, base=10.0):
+    """A short gold light that runs round the panel border forever; seed staggers panels."""
+    dur = base + (seed % 7) * 0.6
+    dl = -((seed * 1.37) % dur)
+    one = ('<rect x="1" y="1" width="%s" height="%s" rx="%s" fill="none" stroke="%s" stroke-width="%s" stroke-opacity="%s" pathLength="1" '
+           'stroke-dasharray="%s %s" style="animation:tr %ss linear infinite;animation-delay:%ss"/>')
+    return (one % (_fmt(W - 2), _fmt(H - 2), rx, c["accent"], 4.5, ".14", dash, _fmt(1 - dash), _fmt(dur), _fmt(dl)) +
+            one % (_fmt(W - 2), _fmt(H - 2), rx, c["accent"], 1.3, ".9", dash, _fmt(1 - dash), _fmt(dur), _fmt(dl)))
+
+
+def seedof(*parts):
+    return sum(ord(ch) * (i + 1) for i, ch in enumerate("".join(str(p) for p in parts))) % 997
+
+
+def icon_live(name, x, y, size, color, delay=0.0):
+    """Icon strokes draw on, hold, draw off, forever. Base = fully drawn."""
+    g = K.ICONS[name]
+    for tag in ("<path ", "<circle ", "<rect "):
+        g = g.replace(tag, tag + 'pathLength="1" ')
+    k = size / 24.0
+    return ('<g transform="translate(%s %s) scale(%s)" fill="none" stroke="%s" color="%s" stroke-width="1.9" '
+            'stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray:1;animation:icd 5s ease-in-out infinite;'
+            'animation-delay:%ss">%s</g>' % (_fmt(x), _fmt(y), _fmt(k), color, color, _fmt(delay), g))
 
 
 def d(s):
@@ -293,6 +320,7 @@ def stats(items, c, m="d"):
             d(0.4 + i * 0.12), _fmt(x), y + rh - 12, 40, c["accent"]))
         b.append('<rect class="sl" x="%s" y="%d" width="10" height="2" rx="1" fill="%s" style="--run:%dpx;animation-duration:3.2s;animation-delay:%ss"/>' % (
             _fmt(x + 40), y + rh - 12, "#fff3cf", int(cw - 90), _fmt(-i * 0.8)))
+    b.append(tracer(W, H, 14, c, seedof("stats", m)))
     return svg(W, H, "".join(b), ". ".join("%s %s (%s)" % it for it in items), css)
 
 
@@ -434,6 +462,7 @@ def card(tag, title, body, metrics, kind, c):
     assert x < W - 24 - 104 - 4, (title, x)
     b.append(motif(kind, W - 24 - 104, H - 46, c))
     alt = "%s. %s %s" % (title, body, " ".join("%s %s" % mm for mm in metrics))
+    b.append(tracer(W, H, 12, c, seedof(title)))
     return svg(W, H, "".join(b), alt.strip())
 
 
@@ -487,6 +516,7 @@ def feature(tag, title, body, metrics, c, m="d"):
     H = int(ly + 40) if m == "m" else int(max(yend + 26, ly + 36))
     b[0] = '<rect x=".5" y=".5" width="%d" height="%d" rx="12" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel"], c["hair"])
     alt = "%s. %s %s" % (title, body, " ".join("%s %s" % mm for mm in metrics))
+    b.append(tracer(W, H, 12, c, seedof("lab", m)))
     return svg(W, H, "".join(b), alt)
 
 
@@ -571,6 +601,7 @@ def chart(data, parse_ref, c, m="d"):
     b.append(mono(left - 6, base + 40, mon, 9.5, c["mute"]))
     alt = "Contributions by day, %s to %s: %d merged or accepted, %d open PRs, %d proposed." % (
         days[0], days[-1], counts["merged"], counts["pr"], counts["proposed"])
+    b.append(tracer(W, H, 14, c, seedof("chart", m)))
     return svg(W, H, "".join(b), alt)
 
 
@@ -623,6 +654,12 @@ def row(dd, label, ref_txt, c, m="d"):
         for i, ln in enumerate(tl):
             b.append(text(18, 104 + i * 19, ln, "r", 12.5, c["body"]))
     alt = "%s: %s. %s. %s" % (label.title(), dd["project"], dd["title"], ref_txt)
+    b.append(tracer(W, H, 10, c, seedof(dd["id"], m), dash=.05, base=12.0))
+    if merged:
+        px = (20.5 if m == "d" else 18.5) + pw + 12
+        py = (26 + (H - 84) / 2) if m == "d" else 26
+        b.append('<circle class="ring" cx="%s" cy="%s" r="3.5" fill="none" stroke="%s"/><circle class="pl" cx="%s" cy="%s" r="3.5" fill="%s"/>' % (
+            _fmt(px), _fmt(py), s["ok"], _fmt(px), _fmt(py), s["ok"]))
     return svg(W, H, "".join(b), alt)
 
 
@@ -637,10 +674,11 @@ def focus(title, ic, body, c, H=None):
     H = H or 100 + 21 * len(lines)
     b = ['<rect x=".5" y=".5" width="%d" height="%s" rx="12" fill="%s" stroke="%s"/>' % (W - 1, _fmt(H - 1), c["panel"], c["hair"])]
     b.append('<rect x="24" y="22" width="36" height="36" rx="9" fill="%s" stroke="%s"/>' % (c["chipbg"], c["hair"]))
-    b.append('<g class="fi"%s>%s</g>' % (d(0.2), K.icon(ic, 32, 30, 20, a)))
+    b.append(icon_live(ic, 32, 30, 20, a, delay=-(seedof(title) % 50) / 10.0))
     b.append(text(74, 46, title, "s", 18.5, c["ink"], track=-0.2))
     for i, ln in enumerate(lines):
         b.append(text(24, 88 + 21 * i, ln, "r", 14, c["body"]))
+    b.append(tracer(W, H, 12, c, seedof(title)))
     return svg(W, H, "".join(b), "%s. %s" % (title, body))
 
 
@@ -653,12 +691,19 @@ def creds(items, c, H):
     a = c["accent"]
     b = ['<rect x=".5" y=".5" width="%d" height="%s" rx="12" fill="%s" stroke="%s"/>' % (W - 1, _fmt(H - 1), c["panel"], c["hair"])]
     b.append(mono(24, 34, "CREDENTIALS", 10.5, a, bold=True, track=1.4))
+    cyc = len(items) * 1.1
+    css = ("@keyframes cr{0%%{stroke:%s;fill:%s}%s%%{stroke:%s;fill:#2a2110}%s%%,100%%{stroke:%s;fill:%s}}"
+           % (c["hair"], c["chipbg"], _fmt(100 * 0.45 / cyc), c["accent"], _fmt(100 * 1.4 / cyc), c["hair"], c["chipbg"]))
+    idx = 0
     for r, rw in enumerate(K._chip_rows(items, W, x0=24)):
         y = 52 + r * 36
         for k, (x, it, cw) in enumerate(rw):
-            b.append('<g class="fi"%s><rect x="%s" y="%d" width="%s" height="27" rx="6" fill="%s" stroke="%s"/>%s</g>' % (
-                d(0.1 + (r * 3 + k) * 0.06), _fmt(x + .5), y, _fmt(cw - 1), c["chipbg"], c["hair"], text(x + 13, y + 18.2, it, "m", 13, c["chipink"])))
-    return svg(W, H, "".join(b), "Credentials: " + ", ".join(items))
+            b.append('<rect x="%s" y="%d" width="%s" height="27" rx="6" fill="%s" stroke="%s" style="animation:cr %ss ease-in-out infinite;'
+                     'animation-delay:%ss"/>%s' % (_fmt(x + .5), y, _fmt(cw - 1), c["chipbg"], c["hair"], _fmt(cyc), _fmt(idx * 1.1),
+                                                   text(x + 13, y + 18.2, it, "m", 13, c["chipink"])))
+            idx += 1
+    b.append(tracer(W, H, 12, c, seedof("creds")))
+    return svg(W, H, "".join(b), "Credentials: " + ", ".join(items), css)
 
 
 def creds_height(items):
@@ -672,27 +717,49 @@ def teach(value, l1, l2, body, c, H):
     b = ['<rect x=".5" y=".5" width="%d" height="%s" rx="12" fill="%s" stroke="%s"/>' % (W - 1, _fmt(H - 1), c["panel"], c["hair"])]
     b.append('<circle class="pl" cx="30" cy="30" r="4" fill="%s"/>' % s["ok"])
     b.append(mono(42, 34, "TEACHING", 10.5, a, bold=True, track=1.4))
-    b.append('<g class="fi">%s</g>' % text(24, 96, value, "b", 46, c["ink"], track=-1.2))
+    ob, ocss = odometer(24, 96, value, 46, c["ink"], "tch", 0.3)
+    b.append(ob)
     vw = width(value, "b", 46, -1.2)
     b.append(text(24 + vw + 14, 76, l1, "s", 16, c["ink"]))
     b.append(text(24 + vw + 14, 98, l2, "m", 16, c["mute"]))
     for i, ln in enumerate(wrap(body, "r", 14, W - 48, 4)):
         b.append(text(24, 134 + 21 * i, ln, "r", 14, c["body"]))
-    return svg(W, H, "".join(b), "Teaching: %s %s %s. %s" % (value, l1, l2, body))
+    b.append(tracer(W, H, 12, c, seedof("teach")))
+    return svg(W, H, "".join(b), "Teaching: %s %s %s. %s" % (value, l1, l2, body), ocss)
 
 
 def teach_height(body):
     return 134 + 21 * len(wrap(body, "r", 14, CARD_W - 48, 4)) + 4
 
 
-def pill(label, ic, c, h=34):
-    fs = 13.5
+PILL_GAP = 8
+
+
+def pill(label, ic, c, m, n, last):
+    """One of n equal buttons that together span the row exactly. The gap to the next button is
+    transparent space inside this SVG, so the row has no inline-whitespace gaps to account for."""
+    W = 840 if m == "d" else 420
+    gap = PILL_GAP if m == "d" else PILL_GAP / 2
+    body = (W - (n - 1) * gap) / n
+    sw = body + (0 if last else gap)
+    h = 40 if m == "d" else 44
+    fs = 13
+    b = '<rect x=".5" y=".5" width="%s" height="%d" rx="8" fill="%s" stroke="%s"/>' % (_fmt(body - 1), h - 1, c["panel"], c["hair"])
     tw = width(label, "s", fs)
-    W = 14 + 16 + 9 + tw + 16
-    b = '<rect x=".5" y=".5" width="%s" height="%d" rx="8" fill="%s" stroke="%s"/>' % (_fmt(W - 1), h - 1, c["panel"], c["hair"])
-    b += K.icon(ic, 13, (h - 16) / 2, 16, c["accent"])
-    b += text(39, h / 2 + fs * 0.36, label, "s", fs, c["ink"])
-    return K.svg(W, h, b, label)
+    if m == "d":
+        assert 16 + 9 + tw + 14 <= body, "pill label does not fit: " + label
+        x0 = (body - (16 + 9 + tw)) / 2
+        b += K.icon(ic, x0, (h - 16) / 2, 16, c["accent"])
+        b += text(x0 + 25, h / 2 + fs * 0.36, label, "s", fs, c["ink"])
+    else:
+        b += K.icon(ic, (body - 20) / 2, (h - 20) / 2, 20, c["accent"])
+    b += tracer(body, h, 8, c, seedof(label, n), dash=.12, base=5.0)
+    return svg(sw, h, b, label)
+
+
+def pill_pct(n, last):
+    body = (840 - (n - 1) * PILL_GAP) / float(n)
+    return (body + (0 if last else PILL_GAP)) / 840 * 100
 
 
 def footer(c, m="d"):
@@ -704,6 +771,16 @@ def footer(c, m="d"):
     t = "regenerated from the contributions ledger" if m == "d" else "regenerated from the ledger"
     b.append(mono(18, 35, "~/eof", 11.5, c["page_acc"], bold=True))
     b.append(mono(W, 35, t, 11, c["page_mute"], anchor="end"))
+    x0, x1 = 70, W - width(t, "mr", 11) - 24
+    pts, xx = [], x0
+    while xx < x1 - 60:
+        pts += ["%s 31" % _fmt(xx + 30), "%s 22" % _fmt(xx + 36), "%s 40" % _fmt(xx + 42), "%s 31" % _fmt(xx + 48)]
+        xx += 90
+    pts.append("%s 31" % _fmt(x1))
+    path = "M%d 31 L" % x0 + " L".join(pts)
+    b.append('<path d="%s" fill="none" stroke="%s" stroke-opacity=".25" stroke-width="1.2"/>' % (path, c["page_acc"]))
+    b.append('<path d="%s" fill="none" stroke="%s" stroke-width="1.6" stroke-linejoin="round" pathLength="1" stroke-dasharray=".14 .86" '
+             'style="animation:tr 3.2s linear infinite"/>' % (path, c["page_acc"]))
     return svg(W, H, "".join(b), "")
 
 
@@ -748,4 +825,80 @@ def ticker(events, c, m="d"):
     b.append('<circle class="pl" cx="20" cy="%s" r="4" fill="%s"/>' % (H / 2, s["ok"]))
     b.append(mono(32, H / 2 + 4, "LIVE", fs, s["ok"], bold=True, track=1.5))
     alt = "Latest activity: " + "; ".join("%s %s %s, %s" % e for e in events)
+    b.append(tracer(W, H, 10, c, seedof("ticker", m)))
     return svg(W, H, "".join(b), alt)
+
+
+# --------------------------------------------------------------------------------- intro
+SHIFTS = ["AI agents acting on real systems", "AI regulation becoming enforceable", "the move to post-quantum cryptography"]
+INTRO = ("I lead product and technology at Purplecop Security, where we build compliance automation for GRC, "
+         "AI governance and privacy. My work sits where three shifts meet:")
+
+
+def intro(c, m="d"):
+    W = 840 if m == "d" else 420
+    fs = 15.5 if m == "d" else 14
+    lines = wrap(INTRO, "r", fs, W - 48, 5)
+    y0 = 38
+    H = int(y0 + 24 * (len(lines) - 1) + 30 + len(SHIFTS) * 36 + 10)
+    b = ['<rect x=".5" y=".5" width="%d" height="%d" rx="12" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel"], c["hair"])]
+    for i, ln in enumerate(lines):
+        b.append(text(24, y0 + 24 * i, ln, "r", fs, c["body"]))
+    y = y0 + 24 * (len(lines) - 1) + 44
+    cyc, css = 9.0, ""
+    for i, sh in enumerate(SHIFTS):
+        yy = y + i * 36
+        t0 = i * 3.0
+        css += ("@keyframes sh%d{0%%,%s%%{transform:scaleX(.001)}%s%%,%s%%{transform:scaleX(1)}%s%%,100%%{transform:scaleX(.001)}}"
+                % (i, _fmt(100 * t0 / cyc), _fmt(100 * (t0 + 1.2) / cyc), _fmt(100 * (t0 + 2.6) / cyc), _fmt(100 * (t0 + 3.0) / cyc)))
+        tw = width(sh, "s", fs + 0.5)
+        assert 76 + tw < W - 16, sh
+        b.append('<rect x="22" y="%s" width="%s" height="28" rx="6" fill="%s" fill-opacity=".16" style="transform-box:fill-box;'
+                 'transform-origin:left center;transform:scaleX(.001);animation:sh%d %ss cubic-bezier(.4,0,.2,1) infinite"/>'
+                 % (_fmt(yy - 19), _fmt(tw + 66), c["accent"], i, _fmt(cyc)))
+        b.append('<circle cx="34" cy="%s" r="4" fill="%s" style="animation:pl 3s ease-in-out infinite;animation-delay:%ss"/>' % (
+            _fmt(yy - 5), c["accent"], _fmt(t0)))
+        b.append(mono(46, yy, "0%d" % (i + 1), 10.5, c["mute"]))
+        b.append(text(72, yy, sh, "s", fs + 0.5, c["ink"]))
+    b.append(tracer(W, H, 12, c, seedof("intro", m)))
+    return svg(W, H, "".join(b), INTRO + " " + "; ".join(SHIFTS) + ".", css)
+
+
+def subhead(title, count, c, m="d"):
+    W = 840 if m == "d" else 420
+    H = 42
+    b = ['<circle class="ring" cx="6" cy="20" r="4" fill="none" stroke="%s"/><circle class="pl" cx="6" cy="20" r="4" fill="%s"/>' % (c["page_acc"], c["page_acc"])]
+    b.append(text(20, 26, title, "s", 17 if m == "d" else 15, c["page_ink"]))
+    b.append(mono(W, 25, count, 11 if m == "d" else 10, c["page_mute"], anchor="end"))
+    b.append('<path d="M0 40.5 H%d" stroke="%s"/>' % (W, c["page_hair"]))
+    b.append('<rect class="sl" x="0" y="39.75" width="40" height="1.5" rx=".75" fill="%s" style="--run:%dpx"/>' % (c["page_acc"], W - 40))
+    return svg(W, H, "".join(b), "%s, %s" % (title, count))
+
+
+SPEAK = ("Virtual keynotes, panels and podcasts on securing AI agents, operationalising ISO/IEC 42001 and the "
+         "EU AI Act, and post-quantum migration for security and GRC leaders.")
+
+
+def speaking(c, m="d"):
+    import math
+    W = 840 if m == "d" else 420
+    fs = 15 if m == "d" else 13.5
+    n = 30
+    tw = (W - 48 - n * 7 - 24) if m == "d" else (W - 48)
+    lines = wrap(SPEAK, "r", fs, tw, 6)
+    H = int(max(140, 76 + 23 * len(lines))) if m == "d" else int(76 + 23 * len(lines) + 70)
+    b = ['<rect x=".5" y=".5" width="%d" height="%d" rx="12" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel"], c["hair"])]
+    b.append('<circle class="ring" cx="30" cy="30" r="4" fill="none" stroke="%s"/><circle class="pl" cx="30" cy="30" r="4" fill="%s"/>' % (S(c)["ok"], S(c)["ok"]))
+    tag = "ON AIR  ·  KEYNOTES  ·  PANELS  ·  PODCASTS" if m == "d" else "ON AIR  ·  TALKS"
+    b.append(mono(42, 34, tag, 10.5, c["accent"], bold=True, track=1.2))
+    for i, ln in enumerate(lines):
+        b.append(text(24, 68 + 23 * i, ln, "r", fs, c["body"]))
+    wx = (W - 24 - n * 7) if m == "d" else (W - n * 7) / 2
+    wy = (H / 2 + 6) if m == "d" else (H - 38)
+    for i in range(n):
+        h = 8 + 36 * abs(math.sin(i * 0.55)) * (0.6 + 0.4 * math.sin(i * 0.21))
+        b.append('<rect x="%s" y="%s" width="4" height="%s" rx="2" fill="%s" style="transform-box:fill-box;transform-origin:center;'
+                 'animation:wv %ss ease-in-out infinite;animation-delay:-%ss"/>' % (
+                     _fmt(wx + i * 7), _fmt(wy - h / 2), _fmt(h), c["accent"], _fmt(0.9 + (i % 5) * 0.17), _fmt((i * 0.13) % 1.3)))
+    b.append(tracer(W, H, 12, c, seedof("speak", m)))
+    return svg(W, H, "".join(b), "Speaking. " + SPEAK)

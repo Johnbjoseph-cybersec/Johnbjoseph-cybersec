@@ -128,8 +128,12 @@ def build_static(merged_n, open_n):
         (str(merged_n), "merged upstream", "+%d open, in review" % open_n),
     ]
     themed("stats", lambda c, m: N.stats(items, c, m), mobile=True)
-    for key, label, ic in PILLS:
-        themed("pill-" + key, lambda c, l=label, i=ic: N.pill(l, i, c))
+    for group, items in (("pill", PILLS), ("pfoot", FOOTER)):
+        for j, (key, label, ic) in enumerate(items):
+            last = j == len(items) - 1
+            themed("%s-%s" % (group, key), lambda c, m, l=label, i=ic, n=len(items), la=last: N.pill(l, i, c, m, n, la), mobile=True)
+    themed("intro", N.intro, mobile=True)
+    themed("speaking", N.speaking, mobile=True)
     themed("sec-built", lambda c, m: N.section("~/built", "Built", "open source + free to use", c, m), mobile=True)
     themed("sec-oss", lambda c, m: N.section("~/open-source", "Upstream work", "%d merged  ·  %d in review" % (merged_n, open_n), c, m), mobile=True)
     themed("sec-focus", lambda c, m: N.section("~/focus", "Focus", "", c, m), mobile=True)
@@ -144,6 +148,22 @@ def build_static(merged_n, open_n):
     ph = max(N.creds_height(CREDENTIALS), N.teach_height(TEACH_TEXT))
     themed("panel-credentials", lambda c: N.creds(CREDENTIALS, c, ph))
     themed("panel-teaching", lambda c: N.teach("12,000+", "active users", "in 34 countries", TEACH_TEXT, c, ph))
+
+
+LINKS = {"website": "https://johnbjoseph-cybersec.github.io/", "lab": "https://grclab.purplecop.io",
+         "youtube": "https://www.youtube.com/@GRCMadeSimple",
+         "newsletter": "https://www.linkedin.com/newsletters/grc-made-simple-7493284804747251713/",
+         "linkedin": "https://www.linkedin.com/in/john-bj/"}
+
+
+def pills_md(group, items):
+    """One line, no whitespace between buttons: the gaps live inside each SVG, so the row spans
+    exactly 100% (any inline space would push the last button to a new line)."""
+    out = []
+    for j, (key, label, ic) in enumerate(items):
+        pct = N.pill_pct(len(items), j == len(items) - 1) - 0.01
+        out.append('<a href="%s">%s</a>' % (LINKS[key], pic2("%s-%s" % (group, key), label, 'width="%.3f%%"' % pct)))
+    return "<p>" + "".join(out) + "</p>"
 
 
 def projects_md():
@@ -221,6 +241,11 @@ def tables(data):
         for f in os.listdir(cdir):
             if f.endswith(".svg") and f not in keep:
                 os.remove(os.path.join(cdir, f))
+    for c in K.MODES:
+        for m in ("d", "m"):
+            suf = "-m" if m == "m" else ""
+            write("assets/%s/sub-merged%s.svg" % (c["mode"], suf), N.subhead("Merged and accepted", "%d merged or accepted" % len(merged), c, m))
+            write("assets/%s/sub-flagship%s.svg" % (c["mode"], suf), N.subhead("Flagship proposals in review", "open, not merged", c, m))
     mt = rows_md(merged, lambda d: status_style(d)[0])
     ft = rows_md(flag, lambda d: status_style(d)[0])
     today = datetime.date.today()
@@ -298,6 +323,7 @@ def main():
     tpl = open(os.path.join(HERE, "README.template.md"), encoding="utf-8").read()
     tpl = tpl.replace("{{merged_table}}", mt).replace("{{flagship_table}}", ft)
     tpl = tpl.replace("{{asof}}", datetime.date.today().isoformat()).replace("{{projects}}", projects_md())
+    tpl = tpl.replace("{{pills_top}}", pills_md("pill", PILLS)).replace("{{pills_foot}}", pills_md("pfoot", FOOTER))
     tpl = tpl.replace("{{merged_n}}", str(merged_n)).replace("{{open_n}}", str(open_n)).replace("{{total_n}}", str(len(data)))
     out = re.sub(r"\{\{(\w+) ([^}]*)\}\}", macro, tpl)
     assert chr(167) not in out
