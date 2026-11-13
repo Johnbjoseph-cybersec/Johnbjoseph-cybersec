@@ -22,6 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 import svgkit as K  # noqa: E402
+import nextgen as N  # noqa: E402
 
 FLAGSHIPS = [  # ledger ids, in display order
     "promptfoo-12396",
@@ -56,8 +57,6 @@ CREDENTIALS = [
     "CCEP", "PrivacyOps", "AI Security & Governance", "AWS Solutions Architect", "Qualys VMDR",
     "TryHackMe Top 1%",
 ]
-TEMPLATE_CHIPS = ["EU AI Act", "ISO 42001", "PQC", "AI vendor risk", "DPDP"]
-STATIC_BANDS = [("built", "01", "Built", ""), ("focus", "03", "Focus", ""), ("speaking", "06", "Speaking", "")]
 
 
 def slug(s):
@@ -73,32 +72,83 @@ def write(path, content):
 
 
 # ------------------------------------------------------------------ static themed assets
-def themed(name, fn):
+def themed(name, fn, mobile=False):
     for c in K.MODES:
-        write("assets/%s/%s.svg" % (c["mode"], name), fn(c))
+        write("assets/%s/%s.svg" % (c["mode"], name), fn(c, "d") if mobile else fn(c))
+        if mobile:
+            write("assets/%s/%s-m.svg" % (c["mode"], name), fn(c, "m"))
 
 
-def build_static(counts):
-    themed("hero", K.hero)
+# Itemized so each total can be checked by hand on the page.
+CROSSWALKS = [("India AI", 48, 157), ("India OT", 99, 285)]
+PROJECTS = [  # (asset, tag, title, body, metrics, motif, url)
+    ("card-ai-crosswalk", "CROSSWALK", "India AI Regulation Crosswalk",
+     "RBI FREE-AI, the DPDP Act and Rules, and CERT-In mapped to ISO/IEC 42001, NIST AI RMF, the EU AI Act and FINOS. Every quote checked against the primary text.",
+     [("48", "provisions"), ("157", "mappings")], "crosswalk",
+     "https://github.com/Johnbjoseph-cybersec/india-ai-regulation-crosswalk"),
+    ("card-ot-crosswalk", "CROSSWALK", "India OT Regulation Crosswalk",
+     "CEA Cyber Security in Power Sector Regulations, 2026 mapped to NIST CSF 2.0, the SP 800-82r3 OT overlay and NERC CIP. Every quote checked against the Gazette text.",
+     [("99", "provisions"), ("285", "mappings")], "crosswalk",
+     "https://github.com/Johnbjoseph-cybersec/india-ot-regulation-crosswalk"),
+    ("card-oscal-overlay", "OSCAL", "SP 800-82r4 OT overlay in OSCAL",
+     "Unofficial machine-readable rendering of the OT overlay in the NIST SP 800-82r4 draft, over SP 800-53r5, validated with oscal-cli.",
+     [("3", "profiles"), ("387", "controls")], "oscal",
+     "https://github.com/Johnbjoseph-cybersec/nist-800-82r4-ot-overlay-oscal"),
+    ("card-inspect-oscal", "EVIDENCE", "inspect-oscal",
+     "Turns UK AI Security Institute Inspect eval logs into validated OSCAL assessment-results mapped to NIST AI RMF, each log's SHA-256 as evidence. Evidence, not a verdict.",
+     [("SHA-256", "per log")], "pipeline",
+     "https://github.com/Johnbjoseph-cybersec/inspect-oscal"),
+    ("card-templates", "TEMPLATES", "GRC Made Simple templates",
+     "Four free, practitioner-grade Excel workbooks: AI system risk register, PQC migration, AI vendor due diligence and DPDP readiness.",
+     [("4", "workbooks"), ("CC BY", "4.0")], "sheets",
+     "https://johnbjoseph-cybersec.github.io/grc-made-simple-templates/"),
+    ("card-mindledger", "LEDGER", "MindLedger",
+     "Local-first ledger for Claude Code: every session and token in an append-only ledger that never goes backwards, plus memory and settings backups.",
+     [("0", "network calls")], "ledger",
+     "https://github.com/Johnbjoseph-cybersec/mindledger"),
+]
+LAB = ("FREE WITH AN ACCOUNT", "GRC Practice Lab",
+       "A full ISO 27001 Lead Implementer course plus hands-on practice: guided scenarios, portfolio projects and controls across nine frameworks, used by 12,000+ active learners in 34 countries.",
+       [("400+", "controls"), ("9", "frameworks"), ("11", "guided scenarios"), ("12", "portfolio projects")])
+
+
+def build_static(merged_n, open_n):
+    themed("hero", N.hero, mobile=True)
+    prov = sum(p for _, p, _ in CROSSWALKS)
+    maps = sum(mm for _, _, mm in CROSSWALKS)
+    items = [
+        ("12,000+", "Practice Lab learners", "active users, 34 countries"),
+        (str(maps), "regulation mappings", " + ".join("%d %s" % (mm, n) for n, _, mm in CROSSWALKS)),
+        (str(prov), "provisions verified", " + ".join("%d %s" % (p, n) for n, p, _ in CROSSWALKS)),
+        (str(merged_n), "merged upstream", "+%d open, in review" % open_n),
+    ]
+    themed("stats", lambda c, m: N.stats(items, c, m), mobile=True)
     for key, label, ic in PILLS:
-        themed("pill-" + key, lambda c, l=label, i=ic: K.pill(l, i, c))
-    for key, label, ic in FOOTER:
-        themed("foot-" + key, lambda c, l=label, i=ic: K.footer_link(l, i, c))
-    for key, num, title, cap in STATIC_BANDS:
-        themed("band-" + key, lambda c, n=num, t=title, p=cap: K.band(n, t, p, c))
-    themed("band-oss", lambda c: K.band("02", "Open-source work", counts, c))
-    fh = max(K.text_card_height(t) for _, _, _, t in FOCUS)
+        themed("pill-" + key, lambda c, l=label, i=ic: N.pill(l, i, c))
+    themed("sec-built", lambda c, m: N.section("~/built", "Built", "open source + free to use", c, m), mobile=True)
+    themed("sec-oss", lambda c, m: N.section("~/open-source", "Upstream work", "%d merged  ·  %d in review" % (merged_n, open_n), c, m), mobile=True)
+    themed("sec-focus", lambda c, m: N.section("~/focus", "Focus", "", c, m), mobile=True)
+    themed("sec-speaking", lambda c, m: N.section("~/speaking", "Speaking", "", c, m), mobile=True)
+    themed("foot", N.footer, mobile=True)
+    themed("card-lab", lambda c, m: N.feature(LAB[0], LAB[1], LAB[2], LAB[3], c, m), mobile=True)
+    for key, tag, title, body, metrics, kind, _ in PROJECTS:
+        themed(key, lambda c, t=tag, ti=title, bo=body, me=metrics, k=kind: N.card(t, ti, bo, me, k, c))
+    fh = max(N.focus_height(t) for _, _, _, t in FOCUS)
     for key, label, ic, body in FOCUS:
-        themed("focus-" + key, lambda c, l=label, i=ic, t=body: K.text_card(l, i, t, c, fh))
-    ph = max(K.credentials_height(CREDENTIALS), K.stat_card_height(TEACH_TEXT))
-    themed("panel-credentials", lambda c: K.credentials_card("04", "Credentials", CREDENTIALS, c, ph))
-    themed("panel-teaching", lambda c: K.stat_card("05", "Teaching", "12,000+", ("active users", "in 34 countries"), TEACH_TEXT, c, ph))
-    for label in TEMPLATE_CHIPS:
-        themed("chip-" + slug(label), lambda c, l=label: K.chip(l, c))
-    themed("rule", K.rule)
-    for lab, val in [("provisions", "48"), ("mappings", "157"), ("provisions", "99"), ("mappings", "285"), ("controls", "387"), ("profiles", "3"), ("controls", "400+"), ("frameworks", "9"),
-                     ("guided scenarios", "11"), ("portfolio projects", "12")]:
-        write("assets/badges/%s-%s.svg" % (slug(val), slug(lab)), K.badge(val, lab))
+        themed("focus-" + key, lambda c, l=label, i=ic, t=body: N.focus(l, i, t, c, fh))
+    ph = max(N.creds_height(CREDENTIALS), N.teach_height(TEACH_TEXT))
+    themed("panel-credentials", lambda c: N.creds(CREDENTIALS, c, ph))
+    themed("panel-teaching", lambda c: N.teach("12,000+", "active users", "in 34 countries", TEACH_TEXT, c, ph))
+
+
+def projects_md():
+    out = []
+    for i in range(0, len(PROJECTS), 2):
+        cells = []
+        for key, tag, title, body, metrics, kind, url in PROJECTS[i:i + 2]:
+            cells.append('  <a href="%s">%s</a>' % (url, pic(key, "%s. %s" % (title, body), 'width="406"')))
+        out.append("<p>\n%s\n</p>" % "\n".join(cells))
+    return "\n\n".join(out)
 
 
 # ------------------------------------------------------------------ contributions
@@ -138,17 +188,19 @@ def cell(s):
     return s.replace("|", "&#124;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", " ")
 
 
-def row(d):
-    ref = parse_ref(d["url"])
-    label, fill, ink = status_style(d)
-    right = ("%s #%s" % (ref[2], ref[3])) if ref else d.get("date", "")
-    write("assets/contrib/%s.svg" % d["id"], K.badge(label, right, left_fill=fill, left_ink=ink))
-    alt = "%s, %s" % (label.title(), right)
-    name = "%s/%s" % (ref[0], ref[1]) if ref else d["project"]
-    proj = "**[%s](%s)**<br>%s" % (cell(d["project"]), d["url"], cell(d.get("area", "")))
-    body = "%s<br><sub>%s</sub><br><a href=\"%s\"><img src=\"assets/contrib/%s.svg\" alt=\"%s\" height=\"32\"></a>" % (
-        cell(short(d["title"])), cell(name), d["url"], d["id"], alt)
-    return "| %s | %s |" % (proj, body)
+def rows_md(items, label_fn):
+    out = []
+    for d in items:
+        ref = parse_ref(d["url"])
+        label = label_fn(d)
+        ref_txt = ("%s #%s" % (ref[2], ref[3])) if ref else d.get("date", "")
+        dd = dict(d, title=short(d["title"], 400))
+        for c in K.MODES:
+            for m in ("d", "m"):
+                write("assets/rows/%s/%s%s.svg" % (c["mode"], d["id"], "-m" if m == "m" else ""), N.row(dd, label, ref_txt, c, m))
+        alt = "%s: %s. %s" % (label.title(), d["project"], short(d["title"]))
+        out.append('  <a href="%s">%s</a>' % (d["url"], pic2("rows/%s/" + d["id"], alt, 'width="100%"')))
+    return "<p>\n%s\n</p>" % "\n".join(out)
 
 
 def tables(data):
@@ -156,22 +208,20 @@ def tables(data):
     merged = sorted([d for d in data if d.get("status", "").lower() in MERGED_STATES],
                     key=lambda d: (d.get("date", ""), d["id"]), reverse=True)
     flag = [byid[i] for i in FLAGSHIPS if i in byid]
-    head = "| Project | Contribution |\n| :-- | :-- |\n"
     open_n = sum(1 for d in data if d.get("status", "").lower() not in MERGED_STATES)
-    # clear stale badges for ids no longer in the ledger
-    keep = {d["id"] + ".svg" for d in data}
-    cdir = os.path.join(ROOT, "assets", "contrib")
-    os.makedirs(cdir, exist_ok=True)
-    for f in os.listdir(cdir):
-        if f.endswith(".svg") and f not in keep:
-            os.remove(os.path.join(cdir, f))
-    mt = head + "\n".join(row(d) for d in merged)
-    ft = head + "\n".join(row(d) for d in flag)
-    counts = "%d merged or accepted  ·  %d in review" % (len(merged), open_n)
+    keep = {d["id"] + suf for d in merged + flag for suf in (".svg", "-m.svg")}
+    for mode in ("light", "dark"):
+        cdir = os.path.join(ROOT, "assets", "rows", mode)
+        os.makedirs(cdir, exist_ok=True)
+        for f in os.listdir(cdir):
+            if f.endswith(".svg") and f not in keep:
+                os.remove(os.path.join(cdir, f))
+    mt = rows_md(merged, lambda d: status_style(d)[0])
+    ft = rows_md(flag, lambda d: status_style(d)[0])
     for c in K.MODES:
-        write("assets/%s/sub-merged.svg" % c["mode"], K.subband("Merged and accepted", "%d contributions" % len(merged), c))
-        write("assets/%s/sub-flagship.svg" % c["mode"], K.subband("Flagship proposals in review", "open, not merged", c))
-    return mt, ft, counts
+        write("assets/%s/chart.svg" % c["mode"], N.chart(data, parse_ref, c, "d"))
+        write("assets/%s/chart-m.svg" % c["mode"], N.chart(data, parse_ref, c, "m"))
+    return mt, ft, len(merged), open_n
 
 
 # ------------------------------------------------------------------ README
@@ -193,10 +243,23 @@ def pic(name, alt, attrs):
             '<img src="assets/light/%s.svg" alt="%s" %s></picture>' % (name, name, alt.replace("&", "&amp;"), attrs))
 
 
+def pic2(name, alt, attrs):
+    """Light/dark x desktop/mobile. name may contain %s for the mode folder (rows/%s/<id>)."""
+    p = (lambda mode, suf: "assets/" + (name % mode if "%s" in name else mode + "/" + name) + suf + ".svg")
+    return ('<picture>'
+            '<source media="(max-width: 600px) and (prefers-color-scheme: dark)" srcset="%s">'
+            '<source media="(max-width: 600px)" srcset="%s">'
+            '<source media="(prefers-color-scheme: dark)" srcset="%s">'
+            '<img src="%s" alt="%s" %s></picture>' % (
+                p("dark", "-m"), p("light", "-m"), p("dark", ""), p("light", ""), alt.replace("&", "&amp;").replace('"', "&quot;"), attrs))
+
+
 def macro(m):
     kind, args = m.group(1), [a.strip() for a in m.group(2).split("|")]
     if kind == "pic":
         return pic(args[0], args[1], args[2] if len(args) > 2 else "")
+    if kind == "pic2":
+        return pic2(args[0], args[1], args[2] if len(args) > 2 else "")
     if kind == "img":
         return '<img src="%s" alt="%s" %s>' % (args[0], args[1], args[2] if len(args) > 2 else "")
     if kind == "chips":
@@ -209,15 +272,16 @@ def main():
     ap.add_argument("--data", default=os.environ.get("CONTRIBUTIONS_JSON") or os.path.join(ROOT, "..", "..", "contributions.json"))
     a = ap.parse_args()
     data = json.load(open(a.data, encoding="utf-8"))
-    mt, ft, counts = tables(data)
-    build_static(counts)
+    mt, ft, merged_n, open_n = tables(data)
+    build_static(merged_n, open_n)
     tpl = open(os.path.join(HERE, "README.template.md"), encoding="utf-8").read()
     tpl = tpl.replace("{{merged_table}}", mt).replace("{{flagship_table}}", ft)
-    tpl = tpl.replace("{{asof}}", datetime.date.today().isoformat())
+    tpl = tpl.replace("{{asof}}", datetime.date.today().isoformat()).replace("{{projects}}", projects_md())
+    tpl = tpl.replace("{{merged_n}}", str(merged_n)).replace("{{open_n}}", str(open_n)).replace("{{total_n}}", str(len(data)))
     out = re.sub(r"\{\{(\w+) ([^}]*)\}\}", macro, tpl)
     assert chr(167) not in out
     write("README.md", _bust(out))
-    print("ok: %d ledger rows, %s" % (len(data), counts))
+    print("ok: %d ledger rows, %d merged/accepted, %d open" % (len(data), merged_n, open_n))
 
 
 if __name__ == "__main__":

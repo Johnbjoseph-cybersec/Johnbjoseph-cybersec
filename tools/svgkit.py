@@ -11,6 +11,7 @@ from xml.sax.saxutils import escape
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 _G = json.load(open(os.path.join(HERE, "glyphs.json")))
+_G.update(json.load(open(os.path.join(HERE, "glyphs_mono.json"))))  # "mr"/"mb": JetBrains Mono (OFL)
 
 # Purplecop palette: dark purple ground, brand purple #7B00FF, Poppins (creative kit).
 DARK = dict(
