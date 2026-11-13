@@ -25,6 +25,19 @@ sys.path.insert(0, HERE)
 import svgkit as K  # noqa: E402
 import nextgen as N  # noqa: E402
 
+# Lab figures come from Dude's stats.json (the same file the website reads), so the profile and
+# the site cannot drift apart when John reports a new number (2026-11-14).
+def _stats():
+    try:
+        with open(os.path.expanduser("~/team-agents/dude/stats.json")) as f:
+            d = json.load(f)
+        return d["lab_active_users"]["display"], str(d["countries"]["display"]), d["controls"]["display"]
+    except (OSError, KeyError, ValueError):
+        return "12,000+", "34", "400+"
+
+
+LEARNERS, COUNTRIES, CONTROLS = _stats()
+
 FLAGSHIPS = [  # ledger ids, in display order
     "promptfoo-12396",
     "ai-governance-framework-449",
@@ -113,8 +126,8 @@ PROJECTS = [  # (asset, tag, title, body, metrics, motif, url)
      "https://github.com/Johnbjoseph-cybersec/mindledger"),
 ]
 LAB = ("FREE WITH AN ACCOUNT", "GRC Practice Lab",
-       "A full ISO 27001 Lead Implementer course plus hands-on practice: guided scenarios, portfolio projects and controls across nine frameworks, used by 12,000+ active learners in 34 countries.",
-       [("400+", "controls"), ("9", "frameworks"), ("11", "guided scenarios"), ("12", "portfolio projects")])
+       "A full ISO 27001 Lead Implementer course plus hands-on practice: guided scenarios, portfolio projects and controls across nine frameworks, used by %s active learners in %s countries." % (LEARNERS, COUNTRIES),
+       [(CONTROLS, "controls"), ("9", "frameworks"), ("11", "guided scenarios"), ("12", "portfolio projects")])
 
 
 def build_static(merged_n, open_n):
@@ -122,7 +135,7 @@ def build_static(merged_n, open_n):
     prov = sum(p for _, p, _ in CROSSWALKS)
     maps = sum(mm for _, _, mm in CROSSWALKS)
     items = [
-        ("12,000+", "Practice Lab learners", "active users, 34 countries"),
+        (LEARNERS, "Practice Lab learners", "active users, %s countries" % COUNTRIES),
         (str(maps), "regulation mappings", " + ".join("%d %s" % (mm, n) for n, _, mm in CROSSWALKS)),
         (str(prov), "provisions verified", " + ".join("%d %s" % (p, n) for n, p, _ in CROSSWALKS)),
         (str(merged_n), "merged upstream", "+%d open, in review" % open_n),
@@ -147,7 +160,7 @@ def build_static(merged_n, open_n):
         themed("focus-" + key, lambda c, l=label, i=ic, t=body: N.focus(l, i, t, c, fh))
     ph = max(N.creds_height(CREDENTIALS), N.teach_height(TEACH_TEXT))
     themed("panel-credentials", lambda c: N.creds(CREDENTIALS, c, ph))
-    themed("panel-teaching", lambda c: N.teach("12,000+", "active users", "in 34 countries", TEACH_TEXT, c, ph))
+    themed("panel-teaching", lambda c: N.teach(LEARNERS, "active users", "in %s countries" % COUNTRIES, TEACH_TEXT, c, ph))
 
 
 LINKS = {"website": "https://johnbjoseph-cybersec.github.io/", "lab": "https://grclab.purplecop.io",
