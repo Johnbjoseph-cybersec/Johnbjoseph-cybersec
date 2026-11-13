@@ -13,17 +13,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 _G = json.load(open(os.path.join(HERE, "glyphs.json")))
 _G.update(json.load(open(os.path.join(HERE, "glyphs_mono.json"))))  # "mr"/"mb": JetBrains Mono (OFL)
 
-# Purplecop palette: dark purple ground, brand purple #7B00FF, Poppins (creative kit).
+# Palette: see DARK/LIGHT below. Poppins + JetBrains Mono, outlined.
+# Black and gold. Panels are black in BOTH GitHub themes (John, 2026-11-13: "the dark mode, in black
+# and goldish"); only the transparent pieces (section heads, footer) switch ink via page_* keys.
 DARK = dict(
-    mode="dark", ground="#0a0514", ground2="#06030c", panel="#150b29", hair="#2c1a52",
-    ink="#ffffff", body="#c3b8e3", mute="#8f82b8", accent="#a56bff", brand="#7B00FF",
-    node="#0a0514", line="#6d3fd1", chipbg="#1a0f33", chipink="#e9ddff",
+    mode="dark", ground="#0a0907", ground2="#050403", panel="#100e0b", hair="#2b2518",
+    ink="#f7f1e3", body="#cfc5ad", mute="#8d8470", accent="#e3b84f", brand="#c9971f",
+    node="#0a0907", line="#8a6a1c", chipbg="#18150f", chipink="#f1e2b8",
+    page_ink="#f7f1e3", page_mute="#8d8470", page_hair="#2b2518", page_acc="#e3b84f",
 )
-LIGHT = dict(
-    mode="light", ground="#f6f3fc", ground2="#efe9fa", panel="#ece6f8", hair="#d6c9ee",
-    ink="#150b2b", body="#43386a", mute="#6d6296", accent="#6a00dc", brand="#7B00FF",
-    node="#f6f3fc", line="#9b6ce8", chipbg="#e6dcf7", chipink="#2b1760",
-)
+LIGHT = dict(DARK, mode="light", page_ink="#14110b", page_mute="#6e6552", page_hair="#e4dcc6", page_acc="#9a7210")
 MODES = (LIGHT, DARK)
 
 _NUM = re.compile(r"([MLHVQCZ])|(-?\d*\.?\d+)")

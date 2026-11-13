@@ -15,12 +15,8 @@ from svgkit import text, width, wrap, _fmt
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # Signal colours on top of the Purplecop palette: green = verified, amber = in review.
-SIG = {
-    "dark": dict(ok="#3fd69a", warn="#f2b54b", term="#0c0618", termhair="#2a1a4d", termink="#ece6ff",
-                 termmute="#8c80b4", termacc="#b388ff", dot="#2a1d47"),
-    "light": dict(ok="#0b8a5c", warn="#9a5a00", term="#0c0618", termhair="#2a1a4d", termink="#ece6ff",
-                  termmute="#8c80b4", termacc="#b388ff", dot="#d9cdf0"),
-}
+_GOLD = {'ok': '#f4d06f', 'warn': '#e3b84f', 'term': '#070605', 'termhair': '#2b2518', 'termink': '#f3ead2', 'termmute': '#8a8068', 'termacc': '#e3b84f', 'dot': '#211c12'}
+SIG = {"dark": _GOLD, "light": _GOLD}
 
 BASE_CSS = (
     "@keyframes fi{from{opacity:0;transform:translateY(8px)}}"
@@ -75,7 +71,7 @@ def grid_bg(W, H, c, rx=18, step=22):
         '<rect x=".5" y=".5" width="%d" height="%d" rx="%d" fill="%s" stroke="%s"/>'
         '<g clip-path="url(#cl)"><rect width="%d" height="%d" fill="url(#gd)" opacity=".9"/>'
         % (step, step, dot, W, H, rx, c["brand"], c["brand"], c["brand"], c["brand"],
-           ".30" if c["mode"] == "dark" else ".14", c["brand"], W - 1, H - 1, rx, c["ground"], c["hair"], W, H)
+           ".22", c["brand"], W - 1, H - 1, rx, c["ground"], c["hair"], W, H)
     )
 
 
@@ -206,7 +202,7 @@ def hero(c, m="d"):
         H = int(ly + 26 + 30)
     for i, (t, (x, yy)) in enumerate(zip(LANES, pos)):
         parts.append('<g class="fi"%s><circle cx="%s" cy="%s" r="3.5" fill="%s"/>%s</g>' % (
-            d(0.9 + i * 0.12), _fmt(x + 3.5), _fmt(yy - 4), c["brand"] if c["mode"] == "dark" else acc, mono(x + 13, yy, t, ls, c["ink"], track=1.2)))
+            d(0.9 + i * 0.12), _fmt(x + 3.5), _fmt(yy - 4), c["accent"], mono(x + 13, yy, t, ls, c["ink"], track=1.2)))
     bg = grid_bg(W, H, c)
     glow = '<circle cx="%s" cy="%s" r="%s" fill="url(#gl)"/>' % ((640, 40, 300) if m == "d" else (380, 30, 220))
     body = bg + glow + "</g>" + "".join(parts)
@@ -241,7 +237,7 @@ def stats(items, c, m="d"):
         assert width(sub, "mr", 10.5 if m == "d" else 9.5) < cw - 30, sub
         assert width(lab, "s", 13.5 if m == "d" else 12.5) < cw - 30, lab
         b.append('<rect class="gx"%s x="%s" y="%d" width="%s" height="2" rx="1" fill="%s"/>' % (
-            d(0.4 + i * 0.12), _fmt(x), y + rh - 12, 40, c["brand"] if c["mode"] == "dark" else c["accent"]))
+            d(0.4 + i * 0.12), _fmt(x), y + rh - 12, 40, c["accent"]))
     return svg(W, H, "".join(b), ". ".join("%s %s (%s)" % it for it in items))
 
 
@@ -250,14 +246,14 @@ def section(path, title, caption, c, m="d"):
     W = 840 if m == "d" else 420
     H = 74
     ts = 28 if m == "d" else 22
-    b = [mono(0, 22, path, 12, c["accent"])]
-    b.append('<g class="fi">%s</g>' % text(0, 56, title, "b", ts, c["ink"], track=-0.4))
+    b = [mono(0, 22, path, 12, c["page_acc"])]
+    b.append('<g class="fi">%s</g>' % text(0, 56, title, "b", ts, c["page_ink"], track=-0.4))
     if caption:
         if m == "d":
-            b.append(mono(W, 54, caption, 11.5, c["mute"], anchor="end"))
+            b.append(mono(W, 54, caption, 11.5, c["page_mute"], anchor="end"))
         else:
-            b.append(mono(W, 22, caption, 10, c["mute"], anchor="end"))
-    b.append('<path d="M0 %s H%d" stroke="%s"/>' % (H - 1.5, W, c["hair"]))
+            b.append(mono(W, 22, caption, 10, c["page_mute"], anchor="end"))
+    b.append('<path d="M0 %s H%d" stroke="%s"/>' % (H - 1.5, W, c["page_hair"]))
     b.append('<rect class="gx" x="0" y="%d" width="56" height="3" rx="1.5" fill="%s"/>' % (H - 3, c["brand"]))
     return svg(W, H, "".join(b), "%s. %s" % (title, caption) if caption else title)
 
@@ -265,7 +261,7 @@ def section(path, title, caption, c, m="d"):
 # ---------------------------------------------------------------------------------- motifs
 def motif(kind, x, y, c):
     """A small animated mark, 104 x 40, unique to each project."""
-    a = c["brand"] if c["mode"] == "dark" else c["accent"]
+    a = c["accent"]
     s = S(c)
     b = []
     if kind == "crosswalk":
@@ -318,7 +314,7 @@ CARD_W, CARD_H = 406, 236
 
 def card(tag, title, body, metrics, kind, c):
     W, H = CARD_W, CARD_H
-    a = c["brand"] if c["mode"] == "dark" else c["accent"]
+    a = c["accent"]
     b = ['<rect x=".5" y=".5" width="%d" height="%d" rx="12" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel"], c["hair"])]
     b.append(mono(24, 34, tag, 10.5, a, bold=True, track=1.4))
     # arrow-out mark, top right
@@ -350,7 +346,7 @@ def card(tag, title, body, metrics, kind, c):
 def feature(tag, title, body, metrics, c, m="d"):
     """The wide GRC Practice Lab card: text left, a live control heatmap right."""
     W = 840 if m == "d" else 420
-    a = c["brand"] if c["mode"] == "dark" else c["accent"]
+    a = c["accent"]
     s = S(c)
     tw = 420 if m == "d" else W - 48
     tl = wrap(body, "r", 14 if m == "d" else 13, tw, 4)
@@ -381,12 +377,12 @@ def feature(tag, title, body, metrics, c, m="d"):
     for r in range(rows):
         for k in range(cols):
             v = rnd.random()
-            fill = s["ok"] if v > 0.62 else a if v > 0.3 else c["chipbg"]
+            fill = s["ok"] if v > 0.62 else "#8a6514" if v > 0.3 else c["chipbg"]
             op = "1" if v > 0.62 else _fmt(0.35 + v)
             b.append('<rect class="pp"%s x="%s" y="%s" width="%d" height="%d" rx="3" fill="%s" opacity="%s"/>' % (
                 d(0.2 + (r + k) * 0.035), gx + k * (cs + gp), gy + r * (cs + gp), cs, cs, fill, op))
     ly = gy + rows * (cs + gp) + 16
-    lg = [("implemented", s["ok"]), ("in progress", a), ("not started", c["chipbg"])]
+    lg = [("implemented", s["ok"]), ("in progress", "#8a6514"), ("not started", c["chipbg"])]
     lx = gx
     for lab, col in lg:
         b.append('<rect x="%s" y="%s" width="10" height="10" rx="2" fill="%s" stroke="%s"/>' % (lx, ly - 9, col, c["hair"]))
@@ -418,7 +414,7 @@ def contrib_kind(dd, parse_ref):
 def chart(data, parse_ref, c, m="d"):
     import datetime as dt
     s = S(c)
-    a = c["brand"] if c["mode"] == "dark" else c["accent"]
+    a = c["accent"]
     W = 840 if m == "d" else 420
     days = sorted({x["date"] for x in data})
     d0 = dt.date.fromisoformat(days[0])
@@ -489,7 +485,7 @@ def _mark(x, y, r, k, a, s, c, delay=None):
 # ---------------------------------------------------------------------------- contribution row
 def row(dd, label, ref_txt, c, m="d"):
     s = S(c)
-    a = c["brand"] if c["mode"] == "dark" else c["accent"]
+    a = c["accent"]
     W = 840 if m == "d" else 420
     merged = label in ("MERGED", "ACCEPTED")
     pill_fill = s["ok"] if merged else "none"
@@ -534,7 +530,7 @@ FOCUS_ICON_CSS = ""
 
 def focus(title, ic, body, c, H=None):
     W = CARD_W
-    a = c["brand"] if c["mode"] == "dark" else c["accent"]
+    a = c["accent"]
     lines = wrap(body, "r", 14, W - 48, 4)
     H = H or 100 + 21 * len(lines)
     b = ['<rect x=".5" y=".5" width="%d" height="%s" rx="12" fill="%s" stroke="%s"/>' % (W - 1, _fmt(H - 1), c["panel"], c["hair"])]
@@ -552,7 +548,7 @@ def focus_height(body):
 
 def creds(items, c, H):
     W = CARD_W
-    a = c["brand"] if c["mode"] == "dark" else c["accent"]
+    a = c["accent"]
     b = ['<rect x=".5" y=".5" width="%d" height="%s" rx="12" fill="%s" stroke="%s"/>' % (W - 1, _fmt(H - 1), c["panel"], c["hair"])]
     b.append(mono(24, 34, "CREDENTIALS", 10.5, a, bold=True, track=1.4))
     for r, rw in enumerate(K._chip_rows(items, W, x0=24)):
@@ -570,7 +566,7 @@ def creds_height(items):
 def teach(value, l1, l2, body, c, H):
     W = CARD_W
     s = S(c)
-    a = c["brand"] if c["mode"] == "dark" else c["accent"]
+    a = c["accent"]
     b = ['<rect x=".5" y=".5" width="%d" height="%s" rx="12" fill="%s" stroke="%s"/>' % (W - 1, _fmt(H - 1), c["panel"], c["hair"])]
     b.append('<circle class="pl" cx="30" cy="30" r="4" fill="%s"/>' % s["ok"])
     b.append(mono(42, 34, "TEACHING", 10.5, a, bold=True, track=1.4))
@@ -601,9 +597,9 @@ def footer(c, m="d"):
     W = 840 if m == "d" else 420
     H = 56
     s = S(c)
-    b = ['<path d="M0 .5 H%d" stroke="%s"/>' % (W, c["hair"])]
+    b = ['<path d="M0 .5 H%d" stroke="%s"/>' % (W, c["page_hair"])]
     b.append('<circle class="pl" cx="5" cy="31" r="4" fill="%s"/>' % s["ok"])
     t = "regenerated from the contributions ledger" if m == "d" else "regenerated from the ledger"
-    b.append(mono(18, 35, "~/eof", 11.5, c["accent"], bold=True))
-    b.append(mono(W, 35, t, 11, c["mute"], anchor="end"))
+    b.append(mono(18, 35, "~/eof", 11.5, c["page_acc"], bold=True))
+    b.append(mono(W, 35, t, 11, c["page_mute"], anchor="end"))
     return svg(W, H, "".join(b), "")
