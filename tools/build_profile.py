@@ -223,6 +223,19 @@ def tables(data):
                 os.remove(os.path.join(cdir, f))
     mt = rows_md(merged, lambda d: status_style(d)[0])
     ft = rows_md(flag, lambda d: status_style(d)[0])
+    today = datetime.date.today()
+
+    def age(ds):
+        n = (today - datetime.date.fromisoformat(ds)).days
+        return "today" if n <= 0 else "yesterday" if n == 1 else "%dd ago" % n
+    recent = sorted(data, key=lambda d: (d.get("date", ""), d["id"]), reverse=True)[:14]
+    ev = []
+    for d in recent:
+        ref = parse_ref(d["url"])
+        ev.append((status_style(d)[0], d["project"], ("%s #%s" % (ref[2], ref[3])) if ref else "", age(d["date"])))
+    for c in K.MODES:
+        write("assets/%s/ticker.svg" % c["mode"], N.ticker(ev, c, "d"))
+        write("assets/%s/ticker-m.svg" % c["mode"], N.ticker(ev, c, "m"))
     for c in K.MODES:
         write("assets/%s/chart.svg" % c["mode"], N.chart(data, parse_ref, c, "d"))
         write("assets/%s/chart-m.svg" % c["mode"], N.chart(data, parse_ref, c, "m"))

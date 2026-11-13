@@ -9,6 +9,8 @@
   <a href="https://www.linkedin.com/in/john-bj/">{{pic pill-linkedin|LinkedIn|height="34"}}</a>
 </p>
 
+{{pic2 ticker|Latest activity from the contributions ledger, refreshed automatically.|width="100%"}}
+
 {{pic2 stats|12,000+ Practice Lab learners in 34 countries. 442 regulation mappings (157 India AI + 285 India OT). 147 provisions verified against primary text (48 + 99). {{merged_n}} merged upstream, {{open_n}} open and in review.|width="100%"}}
 
 I lead product and technology at Purplecop Security, where we build compliance automation for GRC, AI governance and privacy. My work sits where three shifts meet: AI agents acting on real systems, AI regulation becoming enforceable, and the move to post-quantum cryptography.

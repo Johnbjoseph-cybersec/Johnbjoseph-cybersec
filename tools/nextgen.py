@@ -47,6 +47,8 @@ BASE_CSS = (
     ".rs{transform-box:fill-box;transform-origin:center bottom;animation:rs 3.6s ease-in-out infinite}"
     ".tw{animation:tw 5.5s ease-in-out infinite}"
     ".sl{animation:sl 7s ease-in-out infinite alternate}"
+    "@keyframes tr{to{stroke-dashoffset:-1}}"
+    "@keyframes trr{to{stroke-dashoffset:1}}"
     "@media (prefers-reduced-motion:reduce){*{animation:none!important}}"
 )
 
@@ -110,6 +112,8 @@ def console(x, y, w, fs, c):
     h = 46 + lh * (len(CONSOLE) + 3) + 14
     b = ['<g class="fi"%s>' % d(0.15)]
     b.append('<rect x="%s" y="%s" width="%s" height="%s" rx="12" fill="%s" stroke="%s"/>' % (x + .5, y + .5, w - 1, h - 1, s["term"], s["termhair"]))
+    b.append('<rect x="%s" y="%s" width="%s" height="%s" rx="12" fill="none" stroke="%s" stroke-width="1.4" pathLength="1" '
+             'stroke-dasharray=".09 .91" style="animation:trr 7s linear infinite"/>' % (x + .5, y + .5, w - 1, h - 1, s["termacc"]))
     b.append('<path d="M%s %s H%s" stroke="%s"/>' % (x, y + 34.5, x + w, s["termhair"]))
     b.append(mono(x + 16, y + 22, "evidence-engine", fs - 1, s["termink"], bold=True))
     b.append(mono(x + w - 16, y + 22, "example run", fs - 1.5, s["termmute"], anchor="end"))
@@ -234,7 +238,24 @@ def hero(c, m="d"):
             d(0.9 + i * 0.12), _fmt(x + 3.5), _fmt(yy - 4), c["accent"], mono(x + 13, yy, t, ls, c["ink"], track=1.2)))
     bg = grid_bg(W, H, c)
     glow = '<circle cx="%s" cy="%s" r="%s" fill="url(#gl)"/>' % ((640, 40, 300) if m == "d" else (380, 30, 220))
-    body = bg + glow + "</g>" + "".join(parts)
+    pk = ['<defs><linearGradient id="pkg" x1="0" x2="1"><stop offset="0" stop-color="%s" stop-opacity="0"/>'
+          '<stop offset="1" stop-color="%s" stop-opacity=".9"/></linearGradient></defs>' % (c["accent"], c["accent"])]
+    # Only grid rows that cross empty space: above the text, between the thesis and the rule, and
+    # below the lane tags. A packet passing behind text reads as a strikethrough.
+    free = [(0, 36), (296, 330), (368, H - 4)] if m == "d" else [(0, 28), (H - 18, H - 4)]
+    rows = [r for r in range(1, H // 22 + 1) if any(a <= r * 22 + 1 <= b for a, b in free)]
+    for i, row in enumerate(rows):
+        yy = row * 22 + 1
+        dur = 7 + (i * 2.3) % 6
+        css += "@keyframes pk%d{from{transform:translateX(0)}to{transform:translateX(%dpx)}}" % (i, W + 80)
+        pk.append('<g style="animation:pk%d %ss linear infinite;animation-delay:-%ss" opacity=".75">'
+                  '<rect x="-60" y="%s" width="48" height="1.4" fill="url(#pkg)"/><circle cx="-11" cy="%s" r="2" fill="%s"/></g>'
+                  % (i, _fmt(dur), _fmt(i * 1.7), _fmt(yy - 0.7), yy, c["accent"]))
+    trace = ('<rect x="1" y="1" width="%d" height="%d" rx="18" fill="none" stroke="%s" stroke-width="5" stroke-opacity=".16" pathLength="1" '
+             'stroke-dasharray=".1 .9" style="animation:tr 10s linear infinite"/>'
+             '<rect x="1" y="1" width="%d" height="%d" rx="18" fill="none" stroke="%s" stroke-width="1.6" pathLength="1" '
+             'stroke-dasharray=".1 .9" style="animation:tr 10s linear infinite"/>' % (W - 2, H - 2, c["accent"], W - 2, H - 2, c["accent"]))
+    body = bg + glow + "".join(pk) + "</g>" + trace + "".join(parts)
     return svg(W, H, body, "John B Joseph. Co-founder and CPTO, Purplecop Security. Securing AI agents, AI regulation, "
                "post-quantum migration and OT networks. " + THESIS, css)
 
@@ -247,6 +268,7 @@ def stats(items, c, m="d"):
     cols = 4 if m == "d" else 2
     cw = W / cols
     rh = 118
+    css = ""
     rows = (len(items) + cols - 1) // cols
     H = rh * rows
     b = ['<rect x=".5" y=".5" width="%d" height="%d" rx="14" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel"], c["hair"])]
@@ -259,7 +281,9 @@ def stats(items, c, m="d"):
         x = (i % cols) * cw + (24 if m == "d" else 18)
         y = (i // cols) * rh
         b.append('<g class="fi"%s>' % d(0.1 + i * 0.12))
-        b.append(text(x, y + 52, val, "b", vs, c["ink"], track=-0.8))
+        ob, ocss = odometer(x, y + 52, val, vs, c["ink"], "o%d" % i, 0.15 + i * 0.25)
+        b.append(ob)
+        css += ocss
         b.append(text(x, y + 76, lab, "s", 13.5 if m == "d" else 12.5, c["body"]))
         b.append(mono(x, y + 96, sub, 10.5 if m == "d" else 9.5, c["mute"]))
         b.append("</g>")
@@ -269,7 +293,43 @@ def stats(items, c, m="d"):
             d(0.4 + i * 0.12), _fmt(x), y + rh - 12, 40, c["accent"]))
         b.append('<rect class="sl" x="%s" y="%d" width="10" height="2" rx="1" fill="%s" style="--run:%dpx;animation-duration:3.2s;animation-delay:%ss"/>' % (
             _fmt(x + 40), y + rh - 12, "#fff3cf", int(cw - 90), _fmt(-i * 0.8)))
-    return svg(W, H, "".join(b), ". ".join("%s %s (%s)" % it for it in items))
+    return svg(W, H, "".join(b), ". ".join("%s %s (%s)" % it for it in items), css)
+
+
+ODO = 14  # seconds per roll cycle
+
+
+def odometer(x, base, val, size, fill, uid, delay):
+    """Number whose digits roll into place like a counter, hold, then roll again. Base style =
+    the final number. Non-digits (, + .) stay still."""
+    lh = size * 1.18
+    out, css, cx = [], "", x
+    track = -0.8
+    top = base - size * 0.80
+    out.append('<defs><clipPath id="%s"><rect x="%s" y="%s" width="%s" height="%s"/></clipPath></defs>' % (
+        uid, _fmt(x - 4), _fmt(top), _fmt(width(val, "b", size, track) + 12), _fmt(size * 0.98)))
+    out.append('<g clip-path="url(#%s)">' % uid)
+    for j, ch in enumerate(val):
+        adv = width(ch, "b", size) + track
+        if ch.isdigit():
+            dgt = int(ch)
+            col = []
+            for k in range(20):
+                g = str(k % 10)
+                col.append(text(cx + (adv - track - width(g, "b", size)) / 2, base + k * lh, g, "b", size, fill))
+            fin = -(10 + dgt) * lh
+            name = "%s%d" % (uid, j)
+            t0 = delay + j * 0.12
+            css += ("@keyframes %s{0%%,%s%%{transform:translateY(0);opacity:0}%s%%{opacity:1}%s%%,90%%{transform:translateY(%spx);opacity:1}"
+                    "96%%,100%%{transform:translateY(%spx);opacity:0}}"
+                    % (name, _fmt(100 * t0 / ODO), _fmt(100 * (t0 + 0.2) / ODO), _fmt(100 * (t0 + 1.6) / ODO), _fmt(fin), _fmt(fin)))
+            out.append('<g style="transform:translateY(%spx);animation:%s %ss cubic-bezier(.2,.8,.2,1) infinite">%s</g>' % (
+                _fmt(fin), name, ODO, "".join(col)))
+        else:
+            out.append(text(cx, base, ch, "b", size, fill))
+        cx += adv
+    out.append("</g>")
+    return "".join(out), css
 
 
 # ---------------------------------------------------------------------------------- section
@@ -500,6 +560,13 @@ def chart(data, parse_ref, c, m="d"):
         lab = (d0 + dt.timedelta(days=di)).strftime("%d")
         if m == "d" or di % 2 == 0 or di == n - 1:
             b.append(mono(cx, base + 22, lab, 10 if m == "d" else 9, c["mute"], anchor="middle"))
+    sw = right - left + 60
+    b.append('<defs><linearGradient id="swg" x1="0" x2="1"><stop offset="0" stop-color="%s" stop-opacity="0"/>'
+             '<stop offset="1" stop-color="%s" stop-opacity=".22"/></linearGradient></defs>' % (s["ok"], s["ok"]))
+    b.append('<g style="animation:sw 7s cubic-bezier(.45,0,.55,1) infinite"><rect x="%s" y="%s" width="56" height="%s" fill="url(#swg)"/>'
+             '<rect x="%s" y="%s" width="1.5" height="%s" fill="%s" opacity=".8"/></g>' % (
+                 left - 86, top - 14, base - top + 14, left - 30, top - 14, base - top + 14, s["ok"]))
+    b.append('<style>@keyframes sw{from{transform:translateX(0)}to{transform:translateX(%dpx)}}</style>' % sw)
     mon = d0.strftime("%b %Y").upper()
     b.append(mono(left - 6, base + 40, mon, 9.5, c["mute"]))
     alt = "Contributions by day, %s to %s: %d merged or accepted, %d open PRs, %d proposed." % (
@@ -638,3 +705,47 @@ def footer(c, m="d"):
     b.append(mono(18, 35, "~/eof", 11.5, c["page_acc"], bold=True))
     b.append(mono(W, 35, t, 11, c["page_mute"], anchor="end"))
     return svg(W, H, "".join(b), "")
+
+
+# ------------------------------------------------------------------------------------ ticker
+def ticker(events, c, m="d"):
+    """events: (label, project, ref, age). A LIVE badge and the latest ledger events scrolling past.
+    Rebuilt from the ledger on every refresh, so 'age' is current to the last run."""
+    s = S(c)
+    W = 840 if m == "d" else 420
+    H = 46
+    fs = 11.5 if m == "d" else 10.5
+    col = {"MERGED": s["ok"], "ACCEPTED": s["ok"], "OPEN PR": c["accent"], "PROPOSED": c["mute"]}
+    items, x = [], 0
+    for lab, proj, ref, age in events:
+        seg = []
+        seg.append('<circle cx="%s" cy="%s" r="3" fill="%s"/>' % (_fmt(x + 3), H / 2 - 0.5, col.get(lab, c["mute"])))
+        x += 12
+        seg.append(mono(x, H / 2 + 4, lab, fs - 1, col.get(lab, c["mute"]), bold=True, track=0.8))
+        x += width(lab, "mb", fs - 1, 0.8) + 10
+        seg.append(text(x, H / 2 + 4.5, proj, "s", fs + 1.5, c["ink"]))
+        x += width(proj, "s", fs + 1.5) + 9
+        seg.append(mono(x, H / 2 + 4, "%s  ·  %s" % (ref, age), fs, c["mute"]))
+        x += width("%s  ·  %s" % (ref, age), "mr", fs) + 34
+        items.append("".join(seg))
+    strip = "".join(items)
+    sw = x
+    bx = 96 if m == "d" else 78
+    b = ['<rect x=".5" y=".5" width="%d" height="%d" rx="10" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel"], c["hair"])]
+    b.append('<defs><clipPath id="tk"><rect x="%d" y="0" width="%d" height="%d"/></clipPath>'
+             '<linearGradient id="tf" x1="0" x2="1"><stop offset="0" stop-color="%s"/><stop offset="1" stop-color="%s" stop-opacity="0"/></linearGradient>'
+             '<linearGradient id="tf2" x1="1" x2="0"><stop offset="0" stop-color="%s"/><stop offset="1" stop-color="%s" stop-opacity="0"/></linearGradient></defs>'
+             % (bx, W - bx - 1, H, c["panel"], c["panel"], c["panel"], c["panel"]))
+    dur = sw / 38.0
+    b.append('<g clip-path="url(#tk)"><g style="animation:tk %ss linear infinite"><g transform="translate(%d 0)">%s</g>'
+             '<g transform="translate(%s 0)">%s</g></g></g>' % (_fmt(dur), bx + 14, strip, _fmt(bx + 14 + sw), strip))
+    b.append('<style>@keyframes tk{from{transform:translateX(0)}to{transform:translateX(-%spx)}}</style>' % _fmt(sw))
+    b.append('<rect x="%d" y="1" width="28" height="%d" fill="url(#tf)"/>' % (bx, H - 2))
+    b.append('<rect x="%d" y="1" width="28" height="%d" fill="url(#tf2)"/>' % (W - 29, H - 2))
+    # LIVE badge
+    b.append('<path d="M%d 10 V%d" stroke="%s"/>' % (bx, H - 10, c["hair"]))
+    b.append('<circle class="ring" cx="20" cy="%s" r="4" fill="none" stroke="%s"/>' % (H / 2, s["ok"]))
+    b.append('<circle class="pl" cx="20" cy="%s" r="4" fill="%s"/>' % (H / 2, s["ok"]))
+    b.append(mono(32, H / 2 + 4, "LIVE", fs, s["ok"], bold=True, track=1.5))
+    alt = "Latest activity: " + "; ".join("%s %s %s, %s" % e for e in events)
+    return svg(W, H, "".join(b), alt)
