@@ -19,6 +19,7 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+RAW = "https://raw.githubusercontent.com/Johnbjoseph-cybersec/Johnbjoseph-cybersec/main/"
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 import svgkit as K  # noqa: E402
@@ -66,6 +67,10 @@ def slug(s):
 def write(path, content):
     path = os.path.join(ROOT, path)
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    if path.endswith(".svg"):
+        # Gate: a malformed SVG renders as a broken image on GitHub (duplicate style attribute, 2026-11-13).
+        import xml.dom.minidom
+        xml.dom.minidom.parseString(content.encode("utf-8"))
     if os.path.exists(path) and open(path, encoding="utf-8").read() == content:
         return
     open(path, "w", encoding="utf-8").write(content)
@@ -234,7 +239,10 @@ def _bust(md):
         if not os.path.exists(full):
             return m.group(0)
         h = hashlib.sha256(open(full, "rb").read()).hexdigest()[:8]
-        return '%s"%s?v=%s"' % (m.group(1), path, h)
+        # Absolute raw URL: github.com/<repo>/raw/... 302-redirects WITHOUT the query string, so a
+        # same-named file stayed cached (old purple hero after the 2026-11-13 redesign). The raw host
+        # keys its cache on the full URL, so a content hash in ?v= gives every change a fresh URL.
+        return '%s"%s%s?v=%s"' % (m.group(1), RAW, path, h)
     return _re.sub(r'((?:src|srcset)=)"(assets/[^"?]+\.svg)"', rep, md)
 
 

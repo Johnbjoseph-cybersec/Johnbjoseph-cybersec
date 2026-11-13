@@ -37,6 +37,16 @@ BASE_CSS = (
     ".pl{animation:pl 2.6s ease-in-out infinite}"
     ".bl{animation:bl 1.1s steps(1) infinite}"
     ".ring{transform-box:fill-box;transform-origin:center;animation:ring 3.2s ease-out infinite}"
+    "@keyframes fl{to{stroke-dashoffset:-20}}"
+    "@keyframes br{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.82)}}"
+    "@keyframes rs{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.55)}}"
+    "@keyframes tw{0%,100%{opacity:1}50%{opacity:.35}}"
+    "@keyframes sl{from{transform:translateX(0)}to{transform:translateX(var(--run))}}"
+    ".fl{stroke-dasharray:4 6;animation:fl 1.6s linear infinite}"
+    ".br{transform-box:fill-box;transform-origin:left center;animation:br 4.8s ease-in-out infinite}"
+    ".rs{transform-box:fill-box;transform-origin:center bottom;animation:rs 3.6s ease-in-out infinite}"
+    ".tw{animation:tw 5.5s ease-in-out infinite}"
+    ".sl{animation:sl 7s ease-in-out infinite alternate}"
     "@media (prefers-reduced-motion:reduce){*{animation:none!important}}"
 )
 
@@ -89,6 +99,7 @@ CONSOLE = [
     ("test", "tool-call authz", "", "PASS"),
     ("test", "ML-KEM-768 kex", "", "PASS"),
 ]
+CYCLE = 16
 THESIS = "The question behind everything I build: what control proves this is safe, and what evidence shows it is working?"
 
 
@@ -108,16 +119,30 @@ def console(x, y, w, fs, c):
     cmd = 'prove --claim "agent tool calls are safe"'
     b.append(mono(x + 16, ty, "$", fs, s["termacc"], bold=True))
     b.append(mono(x + 16 + cw * 2, ty, cmd, fs, s["termink"]))
-    # typing: a cover in the console colour shrinks toward the right edge of the command in
-    # character steps (scaleX, origin right), so it never paints outside the text. Base = scaleX(0).
+    # The run replays every CYCLE s. Each element gets its own keyframes so all of them hold together
+    # and clear together. Base styles are the finished frame (reduced motion = complete still).
     n = len(cmd)
-    b.append('<rect class="ty" x="%s" y="%s" width="%s" height="%s" fill="%s" style="animation-duration:1.5s;'
-             'animation-timing-function:steps(%d);animation-delay:.6s"/>' % (_fmt(x + 16 + cw * 2 - 1), ty - fs, _fmt(cw * n + 3), fs + 6, s["term"], n))
-    css = ".ty{transform-box:fill-box;transform-origin:right center;transform:scaleX(0);animation-name:ty;animation-fill-mode:both}@keyframes ty{from{transform:scaleX(1)}}"
+    C = CYCLE
+    pc = lambda t: _fmt(100.0 * t / C)
+    css = (".ty{transform-box:fill-box;transform-origin:right center;transform:scaleX(0);animation:ty %ss linear infinite}"
+           "@keyframes ty{0%%,%s%%{transform:scaleX(1);animation-timing-function:steps(%d)}%s%%,93%%{transform:scaleX(0)}96%%,100%%{transform:scaleX(1)}}"
+           % (C, pc(0.6), n, pc(2.1)))
+    b.append('<rect class="ty" x="%s" y="%s" width="%s" height="%s" fill="%s"/>' % (_fmt(x + 16 + cw * 2 - 1), ty - fs, _fmt(cw * n + 3), fs + 6, s["term"]))
+    kn = [0]
+
+    def show(t):
+        kn[0] += 1
+        k = "c%d" % kn[0]
+        css_k = ("@keyframes %s{0%%,%s%%{opacity:0;transform:translateY(5px)}%s%%,92%%{opacity:1;transform:none}95%%,100%%{opacity:0}}"
+                 % (k, pc(t), pc(t + 0.35)))
+        return ' style="animation:%s %ss cubic-bezier(.2,.7,.2,1) infinite"' % (k, C), css_k
+
     t0 = 2.3
     for i, (verb, subj, ref, st) in enumerate(CONSOLE):
         ly = ty + lh * (i + 1)
-        b.append('<g class="fi"%s>' % d(t0 + i * 0.32))
+        st_attr, k = show(t0 + i * 0.32)
+        css += k
+        b.append('<g%s>' % st_attr)
         b.append(mono(x + 16 + cw * 2, ly, verb, fs, s["termacc"]))
         b.append(mono(x + 16 + cw * 8, ly, subj, fs, s["termink"]))
         if ref:
@@ -127,8 +152,12 @@ def console(x, y, w, fs, c):
         b.append("</g>")
     ly = ty + lh * (len(CONSOLE) + 1) + 2
     tend = t0 + len(CONSOLE) * 0.32 + 0.2
-    b.append('<path class="fo"%s d="M%s %s H%s" stroke="%s" stroke-dasharray="3 4"/>' % (d(tend), x + 16, ly - fs - 2, x + w - 16, s["termhair"]))
-    b.append('<g class="fi"%s>' % d(tend + 0.2))
+    st_attr, k = show(tend)
+    css += k
+    b.append('<path%s d="M%s %s H%s" stroke="%s" stroke-dasharray="3 4"/>' % (st_attr, x + 16, ly - fs - 2, x + w - 16, s["termhair"]))
+    st_attr, k = show(tend + 0.25)
+    css += k
+    b.append('<g%s>' % st_attr)
     b.append(mono(x + 16, ly + 6, "evidence", fs, s["termmute"]))
     b.append(mono(x + 16 + cw * 9, ly + 6, "6/6 attached", fs, s["ok"], bold=True))
     end = x + 16 + cw * 22
@@ -238,6 +267,8 @@ def stats(items, c, m="d"):
         assert width(lab, "s", 13.5 if m == "d" else 12.5) < cw - 30, lab
         b.append('<rect class="gx"%s x="%s" y="%d" width="%s" height="2" rx="1" fill="%s"/>' % (
             d(0.4 + i * 0.12), _fmt(x), y + rh - 12, 40, c["accent"]))
+        b.append('<rect class="sl" x="%s" y="%d" width="10" height="2" rx="1" fill="%s" style="--run:%dpx;animation-duration:3.2s;animation-delay:%ss"/>' % (
+            _fmt(x + 40), y + rh - 12, "#fff3cf", int(cw - 90), _fmt(-i * 0.8)))
     return svg(W, H, "".join(b), ". ".join("%s %s (%s)" % it for it in items))
 
 
@@ -254,7 +285,8 @@ def section(path, title, caption, c, m="d"):
         else:
             b.append(mono(W, 22, caption, 10, c["page_mute"], anchor="end"))
     b.append('<path d="M0 %s H%d" stroke="%s"/>' % (H - 1.5, W, c["page_hair"]))
-    b.append('<rect class="gx" x="0" y="%d" width="56" height="3" rx="1.5" fill="%s"/>' % (H - 3, c["brand"]))
+    b.append('<rect class="gx" x="0" y="%d" width="56" height="3" rx="1.5" fill="%s"/>' % (H - 3, c["page_acc"]))
+    b.append('<rect class="sl" x="56" y="%s" width="28" height="1.5" rx=".75" fill="%s" opacity=".85" style="--run:%dpx"/>' % (_fmt(H - 2.25), c["page_acc"], W - 84))
     return svg(W, H, "".join(b), "%s. %s" % (title, caption) if caption else title)
 
 
@@ -270,18 +302,20 @@ def motif(kind, x, y, c):
         links = [(0, 0), (0, 2), (1, 1), (1, 3), (2, 2), (2, 3)]
         for k, (i, j) in enumerate(links):
             (x1, y1), (x2, y2) = L[i], R[j]
-            b.append('<path class="dr" pathLength="1"%s d="M%s %s C%s %s %s %s %s %s" fill="none" stroke="%s" stroke-width="1.3" opacity=".8"/>' % (
-                d(0.4 + k * 0.18), x1, y1, x1 + 46, y1, x2 - 46, y2, x2, y2, a))
+            b.append('<path d="M%s %s C%s %s %s %s %s %s" fill="none" stroke="%s" stroke-width="1" opacity=".35"/>' % (
+                x1, y1, x1 + 46, y1, x2 - 46, y2, x2, y2, a))
+            b.append('<path class="fl"%s d="M%s %s C%s %s %s %s %s %s" fill="none" stroke="%s" stroke-width="1.6"/>' % (
+                d(-k * 0.27), x1, y1, x1 + 46, y1, x2 - 46, y2, x2, y2, a))
         for (px, py) in L:
             b.append('<circle cx="%s" cy="%s" r="3.5" fill="%s"/>' % (px, py, c["ink"]))
         for k, (px, py) in enumerate(R):
-            b.append('<circle class="pp"%s cx="%s" cy="%s" r="3" fill="%s"/>' % (d(1.2 + k * 0.15), px, py, a))
+            b.append('<circle class="pl"%s cx="%s" cy="%s" r="3" fill="%s"/>' % (d(k * 0.6), px, py, a))
     elif kind == "oscal":
         for i, (lab, w) in enumerate([("L", 34), ("M", 60), ("H", 86)]):
             yy = y + 4 + i * 13
             b.append(mono(x, yy + 7, lab, 9.5, c["mute"], bold=True))
             b.append('<rect x="%s" y="%s" width="86" height="7" rx="3.5" fill="%s"/>' % (x + 14, yy, c["chipbg"]))
-            b.append('<rect class="gx"%s x="%s" y="%s" width="%s" height="7" rx="3.5" fill="%s"/>' % (d(0.4 + i * 0.25), x + 14, yy, w, a))
+            b.append('<rect class="br"%s x="%s" y="%s" width="%s" height="7" rx="3.5" fill="%s"/>' % (d(-i * 1.4), x + 14, yy, w, a))
     elif kind == "pipeline":
         pts = [x + 8, x + 52, x + 96]
         yy = y + 20
@@ -296,15 +330,15 @@ def motif(kind, x, y, c):
     elif kind == "ledger":
         hs = [8, 12, 15, 19, 24, 28, 33, 38]
         for i, h in enumerate(hs):
-            b.append('<rect class="gy"%s x="%s" y="%s" width="9" height="%s" rx="2" fill="%s" opacity="%s"/>' % (
-                d(0.3 + i * 0.1), x + 6 + i * 12.5, y + 40 - h, h, a, _fmt(0.45 + i * 0.07)))
+            b.append('<rect class="rs"%s x="%s" y="%s" width="9" height="%s" rx="2" fill="%s" opacity="%s"/>' % (
+                d(-i * 0.3), x + 6 + i * 12.5, y + 40 - h, h, a, _fmt(0.45 + i * 0.07)))
     elif kind == "sheets":
         for i in range(4):
             sx = x + 4 + i * 25
             b.append('<rect x="%s" y="%s" width="20" height="28" rx="3" fill="%s" stroke="%s"/>' % (sx, y + 6, c["panel"], c["hair"]))
             for r in range(4):
-                b.append('<rect class="gx"%s x="%s" y="%s" width="%s" height="2.4" rx="1.2" fill="%s"/>' % (
-                    d(0.4 + i * 0.15 + r * 0.08), sx + 4, y + 12 + r * 5, 12 if r % 2 else 9, a if r == 0 else c["mute"]))
+                b.append('<rect class="tw"%s x="%s" y="%s" width="%s" height="2.4" rx="1.2" fill="%s"/>' % (
+                    d(-(i * 0.9 + r * 0.45)), sx + 4, y + 12 + r * 5, 12 if r % 2 else 9, a if r == 0 else c["mute"]))
     return "".join(b)
 
 
@@ -379,8 +413,9 @@ def feature(tag, title, body, metrics, c, m="d"):
             v = rnd.random()
             fill = s["ok"] if v > 0.62 else "#8a6514" if v > 0.3 else c["chipbg"]
             op = "1" if v > 0.62 else _fmt(0.35 + v)
-            b.append('<rect class="pp"%s x="%s" y="%s" width="%d" height="%d" rx="3" fill="%s" opacity="%s"/>' % (
-                d(0.2 + (r + k) * 0.035), gx + k * (cs + gp), gy + r * (cs + gp), cs, cs, fill, op))
+            tile = '<rect x="%s" y="%s" width="%d" height="%d" rx="3" fill="%s" opacity="%s"/>' % (
+                gx + k * (cs + gp), gy + r * (cs + gp), cs, cs, fill, op)
+            b.append('<g class="tw"%s>%s</g>' % (d(-rnd.random() * 5.5), tile) if rnd.random() < 0.34 else tile)
     ly = gy + rows * (cs + gp) + 16
     lg = [("implemented", s["ok"]), ("in progress", "#8a6514"), ("not started", c["chipbg"])]
     lx = gx
