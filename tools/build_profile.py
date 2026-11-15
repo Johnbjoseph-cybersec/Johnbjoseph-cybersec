@@ -45,6 +45,27 @@ FLAGSHIPS = [  # ledger ids, in display order
     "osv-scanner-97",
 ]
 MERGED_STATES = {"merged", "accepted"}
+# John 2026-11-15: big-name work must reach "Flagship proposals" with no reminder. Any OPEN ledger row whose org is
+# here, or that carries "flagship": true, is featured automatically after the pinned FLAGSHIPS (newest first).
+PRESTIGE_ORGS = {
+    "google", "googlecloudplatform", "google-deepmind", "nasa", "nasa-jpl", "finos", "nationalsecurityagency",
+    "mitre", "mitre-attack", "mitre-atlas", "d3fend", "cisagov", "open-quantum-safe", "pqca", "hl7", "hapifhir",
+    "boeing", "owasp", "ossf", "openssf", "cloudsecurityalliance", "microsoft", "aws", "awslabs", "nvidia", "ibm",
+}
+FLAGSHIP_MAX = 8
+
+
+def flagship_rows(data):
+    byid = {d["id"]: d for d in data}
+    pinned = [byid[i] for i in FLAGSHIPS if i in byid]
+    seen = {d["id"] for d in pinned}
+    auto = sorted(
+        (d for d in data
+         if d["id"] not in seen
+         and d.get("status", "").lower() not in MERGED_STATES
+         and (d.get("flagship") is True or d.get("org", "").lower() in PRESTIGE_ORGS)),
+        key=lambda d: (d.get("date", ""), d["id"]), reverse=True)
+    return (pinned + auto)[:FLAGSHIP_MAX]
 
 PILLS = [
     ("website", "Website", "globe"),
@@ -245,7 +266,7 @@ def tables(data):
     byid = {d["id"]: d for d in data}
     merged = sorted([d for d in data if d.get("status", "").lower() in MERGED_STATES],
                     key=lambda d: (d.get("date", ""), d["id"]), reverse=True)
-    flag = [byid[i] for i in FLAGSHIPS if i in byid]
+    flag = flagship_rows(data)
     open_n = sum(1 for d in data if d.get("status", "").lower() not in MERGED_STATES)
     keep = {d["id"] + suf for d in merged + flag for suf in (".svg", "-m.svg")}
     for mode in ("light", "dark"):
