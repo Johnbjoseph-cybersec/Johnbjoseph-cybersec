@@ -616,6 +616,33 @@ def _mark(x, y, r, k, a, s, c, delay=None):
 
 
 # ---------------------------------------------------------------------------- contribution row
+def name_lines(name, maxw, size=15):
+    """Project name for a row: one line if it fits, else wrapped at hyphens over two lines at 14px.
+    Repo slugs like www-project-ai-security-and-privacy-guide have no spaces, so wrap() cannot break them
+    and they overflowed into the title column (John, 2026-11-17)."""
+    if width(name, "s", size) <= maxw:
+        return [name], size
+    size = 14
+    parts = [p + "-" for p in name.split("-")]
+    parts[-1] = parts[-1][:-1]
+    lines, cur = [], ""
+    for p in parts:
+        if cur and width(cur + p, "s", size) > maxw:
+            lines.append(cur)
+            cur = p
+        else:
+            cur += p
+    lines.append(cur)
+    if len(lines) > 2:
+        lines = [lines[0], "".join(lines[1:])]
+    fixed = []
+    for ln in lines:
+        while width(ln, "s", size) > maxw and len(ln) > 2:
+            ln = ln[:-2] + "\u2026"
+        fixed.append(ln)
+    return fixed, size
+
+
 def row(dd, label, ref_txt, c, m="d"):
     s = S(c)
     a = c["accent"]
@@ -629,14 +656,16 @@ def row(dd, label, ref_txt, c, m="d"):
     if m == "d":
         rw = width(ref_txt, "mb", 11.5)
         tl = wrap(dd["title"], "r", 13.5, W - 244 - 20 - rw - 28, 3)
-        H = 84 if len(tl) <= 2 else 100
+        nl, nsz = name_lines(dd["project"], 210)
+        hb = 84 if len(nl) == 1 else 102
+        H = max(84 if len(tl) <= 2 else 100, hb)
         b.append('<rect x=".5" y=".5" width="%d" height="%d" rx="10" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel"], c["hair"]))
-        oy = (H - 84) / 2
+        oy = (H - hb) / 2
         b.append('<rect x="20.5" y="%s" width="%s" height="19" rx="9.5" fill="%s" stroke="%s"/>' % (_fmt(16.5 + oy), _fmt(pw), pill_fill, pill_stroke))
         b.append(mono(29.5, 29.5 + oy, label, 9.5, pill_ink, bold=True, track=1))
-        name = wrap(dd["project"], "s", 15, 210, 1)[0]
-        b.append(text(20, 58 + oy, name, "s", 15, c["ink"]))
-        b.append(mono(20, 74 + oy, dd.get("area", ""), 10, c["mute"]))
+        for i, ln in enumerate(nl):
+            b.append(text(20, 58 + oy + i * 17, ln, "s", nsz, c["ink"]))
+        b.append(mono(20, 74 + oy + (len(nl) - 1) * 17, dd.get("area", ""), 10, c["mute"]))
         ty = H / 2 + 5 - (len(tl) - 1) * 10.5
         for i, ln in enumerate(tl):
             b.append(text(244, ty + i * 21, ln, "r", 13.5, c["body"]))
@@ -649,15 +678,20 @@ def row(dd, label, ref_txt, c, m="d"):
         b.append('<rect x="18.5" y="16.5" width="%s" height="19" rx="9.5" fill="%s" stroke="%s"/>' % (_fmt(pw), pill_fill, pill_stroke))
         b.append(mono(27.5, 29.5, label, 9.5, pill_ink, bold=True, track=1))
         b.append(mono(W - 18, 30, ref_txt, 10.5, a, anchor="end", bold=True))
-        b.append(text(18, 62, wrap(dd["project"], "s", 15, W - 36, 1)[0], "s", 15, c["ink"]))
-        b.append(mono(18, 79, dd.get("area", ""), 9.5, c["mute"]))
+        nl, nsz = name_lines(dd["project"], W - 36)
+        ex = (len(nl) - 1) * 17
+        H += ex
+        b[0] = '<rect x=".5" y=".5" width="%d" height="%d" rx="10" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel"], c["hair"])
+        for i, ln in enumerate(nl):
+            b.append(text(18, 62 + i * 17, ln, "s", nsz, c["ink"]))
+        b.append(mono(18, 79 + ex, dd.get("area", ""), 9.5, c["mute"]))
         for i, ln in enumerate(tl):
-            b.append(text(18, 104 + i * 19, ln, "r", 12.5, c["body"]))
+            b.append(text(18, 104 + ex + i * 19, ln, "r", 12.5, c["body"]))
     alt = "%s: %s. %s. %s" % (label.title(), dd["project"], dd["title"], ref_txt)
     b.append(tracer(W, H, 10, c, seedof(dd["id"], m), dash=.05, base=12.0))
     if merged:
         px = (20.5 if m == "d" else 18.5) + pw + 12
-        py = (26 + (H - 84) / 2) if m == "d" else 26
+        py = (26 + oy) if m == "d" else 26
         b.append('<circle class="ring" cx="%s" cy="%s" r="3.5" fill="none" stroke="%s"/><circle class="pl" cx="%s" cy="%s" r="3.5" fill="%s"/>' % (
             _fmt(px), _fmt(py), s["ok"], _fmt(px), _fmt(py), s["ok"]))
     return svg(W, H, "".join(b), alt)
