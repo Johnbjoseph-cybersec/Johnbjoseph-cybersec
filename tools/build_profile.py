@@ -121,6 +121,10 @@ def themed(name, fn, mobile=False):
 # Itemized so each total can be checked by hand on the page.
 CROSSWALKS = [("India AI", 48, 157), ("India OT", 99, 285)]
 PROJECTS = [  # (asset, tag, title, body, metrics, motif, url)
+    ("card-rewindagents", "OPEN SOURCE", "rewindagents",
+     "Undo for AI coding agents, including rm -rf: hooks record every step, then take back one step, one file or a whole session. MCP server, Claude Code plugin, VS Code extension.",
+     [("7", "agent hooks"), ("0", "network calls")], "ledger",
+     "https://github.com/Johnbjoseph-cybersec/rewindagents"),
     ("card-ai-crosswalk", "CROSSWALK", "India AI Regulation Crosswalk",
      "RBI FREE-AI, the DPDP Act and Rules, and CERT-In mapped to ISO/IEC 42001, NIST AI RMF, the EU AI Act and FINOS. Every quote checked against the primary text.",
      [("48", "provisions"), ("157", "mappings")], "crosswalk",
