@@ -1,8 +1,8 @@
 """svgkit: tiny stdlib SVG toolkit for the profile README.
 
 GitHub renders README SVGs as plain images: no web fonts, no scripts. So all text is OUTLINED
-from Poppins (tools/glyphs.json, made once by extract_glyphs.py) and every asset looks the
-same on every device. Nothing here needs a third-party package.
+from the website's typefaces, Inter Tight and JetBrains Mono (tools/glyphs*.json, made once by
+extract_glyphs.py), and every asset looks the same on every device. Nothing here needs a third-party package.
 """
 import json
 import os
@@ -11,18 +11,23 @@ from xml.sax.saxutils import escape
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 _G = json.load(open(os.path.join(HERE, "glyphs.json")))
-_G.update(json.load(open(os.path.join(HERE, "glyphs_mono.json"))))  # "mr"/"mb": JetBrains Mono (OFL)
+_G.update(json.load(open(os.path.join(HERE, "glyphs_mono.json"))))  # "mr"/"mm"/"mb": JetBrains Mono 400/500/600 (OFL)
 
-# Palette: see DARK/LIGHT below. Poppins + JetBrains Mono, outlined.
-# Black and gold. Panels are black in BOTH GitHub themes (John, 2026-11-13: "the dark mode, in black
-# and goldish"); only the transparent pieces (section heads, footer) switch ink via page_* keys.
+# Palette: the website's tokens (johnbjoseph-cybersec.github.io, redesign 2026-11, John approved 2026-11-19):
+# navy family, ONE amber accent (#febd59), green (#3ccf91) for status only (merged / accepted / recognised).
+# Inter Tight + JetBrains Mono, outlined.
 DARK = dict(
-    mode="dark", ground="#0a0907", ground2="#050403", panel="#100e0b", hair="#2b2518",
-    ink="#f7f1e3", body="#cfc5ad", mute="#8d8470", accent="#e3b84f", brand="#c9971f",
-    node="#0a0907", line="#8a6a1c", chipbg="#18150f", chipink="#f1e2b8",
-    page_ink="#f7f1e3", page_mute="#8d8470", page_hair="#2b2518", page_acc="#e3b84f",
+    mode="dark", ground="#0a1119", ground2="#0f1925", panel="#0f1925", panel2="#152231", panel3="#1c2c3d",
+    hair="#223040", hair2="#2e3c4b", ink="#f2f3f0", body="#a9b3be", mute="#76838f",
+    accent="#febd59", brand="#febd59", acc_ink="#0f1925", acc_soft="#2a2a22",
+    ok="#3ccf91", ok_text="#3ccf91", ok_ink="#06231a",
+    node="#0a1119", line="#febd59", chipbg="#18263a", chipink="#d5dbe1",
+    page_ink="#f2f3f0", page_body="#a9b3be", page_mute="#76838f", page_hair="#2a3441", page_acc="#febd59", page_bar="#febd59",
 )
-LIGHT = dict(DARK, mode="light", page_ink="#14110b", page_mute="#6e6552", page_hair="#e4dcc6", page_acc="#9a7210")
+# Panels are dark in BOTH GitHub themes (the website is dark; John approved dark panels 2026-11-13 and again
+# 2026-11-19). Only the transparent pieces (section heads, sub-heads, footer) switch ink via the page_* keys.
+LIGHT = dict(DARK, mode="light", page_ink="#0f1925", page_body="#3e4c5a", page_mute="#5f6c79", page_hair="#d8dee4",
+             page_acc="#a15f00", page_bar="#f0a63a")
 MODES = (LIGHT, DARK)
 
 _NUM = re.compile(r"([MLHVQCZ])|(-?\d*\.?\d+)")
@@ -48,16 +53,23 @@ def _xform(d, k, ox, oy):
     return "".join(out)
 
 
+def _f1(v):
+    """Glyph coordinates at 0.1 px: invisible at any zoom, and half the bytes of 0.01."""
+    s = "%.1f" % v
+    s = s.rstrip("0").rstrip(".") if "." in s else s
+    return "0" if s == "-0" else s
+
+
 def _emit(cmd, nums, k, ox, oy):
     if cmd == "Z":
         return "Z"
     if cmd == "H":
-        return "H" + _fmt(nums[0] * k + ox)
+        return "H" + _f1(nums[0] * k + ox)
     if cmd == "V":
-        return "V" + _fmt(nums[0] * k + oy)
+        return "V" + _f1(nums[0] * k + oy)
     pts = []
     for i in range(0, len(nums), 2):
-        pts.append(_fmt(nums[i] * k + ox) + " " + _fmt(nums[i + 1] * k + oy))
+        pts.append(_f1(nums[i] * k + ox) + " " + _f1(nums[i + 1] * k + oy))
     return cmd + " ".join(pts)
 
 
@@ -67,20 +79,39 @@ def width(s, w="r", size=16, track=0.0):
     return sum(f["g"].get(c, f["g"]["?"])[0] * k + track for c in s) - (track if s else 0)
 
 
+def _gid(w, ch):
+    return "G%s_%x" % (w, ord(ch))
+
+
 def text(x, y, s, w="r", size=16, fill="#000", anchor="start", track=0.0, opacity=None):
-    """Outlined text as one <path>. y is the baseline."""
+    """Outlined text. y is the baseline. Each glyph is defined once per SVG (svg() adds the <defs>) and
+    placed with <use>, in font units inside one scale(): a fraction of the bytes of repeated outlines."""
     f = _G[w]
     k = size / f["upm"]
     tw = width(s, w, size, track)
     cx = x - (tw if anchor == "end" else tw / 2 if anchor == "middle" else 0)
     parts = []
     for c in s:
-        adv, d = f["g"].get(c, f["g"]["?"])
+        if c not in f["g"]:
+            c = "?"
+        adv, d = f["g"][c]
         if d:
-            parts.append(_xform(d, k, cx, y))
+            parts.append('<use href="#%s" x="%s" y="%s"/>' % (_gid(w, c), _f1(cx / k), _f1(y / k)))
         cx += adv * k + track
     op = ' fill-opacity="%s"' % opacity if opacity is not None else ""
-    return '<path fill="%s"%s d="%s"/>' % (fill, op, "".join(parts))
+    return '<g fill="%s"%s transform="scale(%s)">%s</g>' % (fill, op, ("%.6f" % k).rstrip("0"), "".join(parts))
+
+
+_USE = re.compile(r'href="#(G([a-z]+)_([0-9a-f]+))"')
+
+
+def glyph_defs(body):
+    seen = {}
+    for gid, w, hx in _USE.findall(body):
+        seen[gid] = (w, chr(int(hx, 16)))
+    if not seen:
+        return ""
+    return "<defs>%s</defs>" % "".join('<path id="%s" d="%s"/>' % (gid, _G[w]["g"][ch][1]) for gid, (w, ch) in sorted(seen.items()))
 
 
 def wrap(s, w, size, maxw, maxlines):
@@ -103,11 +134,11 @@ def wrap(s, w, size, maxw, maxlines):
     return lines
 
 
-def svg(wd, ht, body, title):
+def svg(wd, ht, body, title, defs=True):
     return (
         '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s" '
         'role="img" aria-label="%s"><title>%s</title>%s</svg>\n'
-        % (_fmt(wd), _fmt(ht), _fmt(wd), _fmt(ht), escape(title, {'"': "&quot;"}), escape(title), body)
+        % (_fmt(wd), _fmt(ht), _fmt(wd), _fmt(ht), escape(title, {'"': "&quot;"}), escape(title), (glyph_defs(body) if defs else "") + body)
     )
 
 

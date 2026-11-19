@@ -38,6 +38,77 @@ def _stats():
 
 LEARNERS, COUNTRIES, CONTROLS = _stats()
 
+# The website's own data (Dude's build_site_data.py writes it every 2 h): proof numbers, achievements (badges +
+# organisations with official logos) and the newsletter. Missing file -> those panels are left as last built.
+SITE = os.path.expanduser("~/team-agents/dude/site")
+
+
+def _site():
+    try:
+        with open(os.path.join(SITE, "data", "site.json")) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+SITE_DATA = _site()
+
+
+def _month(as_of):
+    try:
+        return datetime.date.fromisoformat(as_of).strftime("%b %Y")
+    except (TypeError, ValueError):
+        return ""
+
+
+def proof_items():
+    """The site's proof strip, word for word: (value, label, source . month)."""
+    st = (SITE_DATA or {}).get("stats") or {}
+    try:
+        with open(os.path.expanduser("~/team-agents/dude/stats.json")) as f:
+            st = dict(json.load(f), **st)
+    except (OSError, ValueError):
+        pass
+
+    def src(k, default):
+        e = st.get(k) or {}
+        return "%s \u00b7 %s" % ((e.get("source") or default).split(",")[0], _month(e.get("as_of"))) if e.get("as_of") else default
+    li = (st.get("linkedin_followers") or {}).get("value")
+    items = [(LEARNERS, "people practise GRC in the lab I built", src("lab_active_users", "Google Analytics")),
+             (COUNTRIES, "countries they log in from", src("countries", "Google Analytics"))]
+    if li:
+        items.append(("{:,}".format(li), "people follow along on LinkedIn", src("linkedin_followers", "LinkedIn analytics")))
+    items.append((CONTROLS, "controls across 9 frameworks to practise on", src("controls", "GRC Practice Lab")))
+    return items
+
+
+def _embed(rel, px=64, jpeg=False):
+    """data: URI for a site image. A copy is kept in assets/embed/ (downscaled once with macOS sips when available)
+    so the profile still builds if the site moves, and the SVGs stay small."""
+    import base64
+    import shutil
+    import subprocess
+    name = os.path.basename(rel)
+    if jpeg:  # badges are clipped to a circle, so they need no alpha; JPEG is a third of the PNG
+        name = os.path.splitext(name)[0] + ".jpg"
+    dst = os.path.join(ROOT, "assets", "embed", str(px), name)
+    src = os.path.join(SITE, rel)
+    if not os.path.exists(dst) and os.path.exists(src):
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copyfile(src, dst)
+        try:
+            cmd = ["sips", "-Z", str(px)] + (["-s", "format", "jpeg", "-s", "formatOptions", "82"] if jpeg else []) + [dst]
+            subprocess.run(cmd, check=False, capture_output=True, timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            pass
+    if not os.path.exists(dst):
+        return None
+    mime = "image/jpeg" if name.lower().endswith((".jpg", ".jpeg")) else "image/webp" if name.endswith(".webp") else "image/png"
+    return "data:%s;base64,%s" % (mime, base64.b64encode(open(dst, "rb").read()).decode("ascii"))
+
+
+ACH_SHOW = 12  # organisation tiles shown (the Hall of Fame and the most-merged first, as on the site)
+
 FLAGSHIPS = [  # ledger ids, in display order
     "promptfoo-12396",
     "ai-governance-framework-449",
@@ -45,6 +116,7 @@ FLAGSHIPS = [  # ledger ids, in display order
     "osv-scanner-97",
 ]
 MERGED_STATES = {"merged", "accepted"}
+WON_STATES = MERGED_STATES | {"recognised"}  # shown green, as on the site; counts stay merged + accepted
 # John 2026-11-15: big-name work must reach "Flagship proposals" with no reminder. Any OPEN ledger row whose org is
 # here, or that carries "flagship": true, is featured automatically after the pinned FLAGSHIPS (newest first).
 PRESTIGE_ORGS = {
@@ -62,18 +134,19 @@ def flagship_rows(data):
     auto = sorted(
         (d for d in data
          if d["id"] not in seen
-         and d.get("status", "").lower() not in MERGED_STATES
+         and d.get("status", "").lower() not in WON_STATES
          and (d.get("flagship") is True or d.get("org", "").lower() in PRESTIGE_ORGS)),
         key=lambda d: (d.get("date", ""), d["id"]), reverse=True)
     return (pinned + auto)[:FLAGSHIP_MAX]
 
 PILLS = [
+    ("newsletter", "Newsletter", "mail"),
     ("website", "Website", "globe"),
     ("lab", "GRC Practice Lab", "flask"),
     ("youtube", "YouTube", "play"),
-    ("newsletter", "Newsletter", "mail"),
     ("linkedin", "LinkedIn", "in"),
 ]
+PRIMARY = "newsletter"  # the site's one amber button
 FOOTER = [("website", "Website", "globe"), ("linkedin", "LinkedIn", "in"), ("youtube", "GRC Made Simple", "play")]
 FOCUS = [
     ("ai-security", "AI security", "shield",
@@ -155,37 +228,72 @@ LAB = ("FREE WITH AN ACCOUNT", "GRC Practice Lab",
        [(CONTROLS, "controls"), ("9", "frameworks"), ("11", "guided scenarios"), ("12", "portfolio projects")])
 
 
-def build_static(merged_n, open_n):
-    themed("hero", N.hero, mobile=True)
+def build_static(merged_n, open_n, total_n, recog_n, orgs_n):
+    themed("hero", lambda c, m: N.hero(c, proof_items(), m), mobile=True)
     prov = sum(p for _, p, _ in CROSSWALKS)
     maps = sum(mm for _, _, mm in CROSSWALKS)
     items = [
-        (LEARNERS, "Practice Lab learners", "active users, %s countries" % COUNTRIES),
-        (str(maps), "regulation mappings", " + ".join("%d %s" % (mm, n) for n, _, mm in CROSSWALKS)),
-        (str(prov), "provisions verified", " + ".join("%d %s" % (p, n) for n, p, _ in CROSSWALKS)),
-        (str(merged_n), "contributions accepted", "+%d open, in review" % open_n),
+        (str(merged_n), "contributions accepted", "merged + accepted upstream"),
+        (str(open_n), "open, in review", "PRs + proposals, not merged"),
+        (str(total_n), "contributions in all", "%d + %d + %d recognised" % (merged_n, open_n, recog_n)),
+        (str(orgs_n), "organisations", "merged, accepted, recognised"),
     ]
     themed("stats", lambda c, m: N.stats(items, c, m), mobile=True)
-    for group, items in (("pill", PILLS), ("pfoot", FOOTER)):
-        for j, (key, label, ic) in enumerate(items):
-            last = j == len(items) - 1
-            themed("%s-%s" % (group, key), lambda c, m, l=label, i=ic, n=len(items), la=last: N.pill(l, i, c, m, n, la), mobile=True)
+    for group, items_ in (("pill", PILLS), ("pfoot", FOOTER)):
+        for j, (key, label, ic) in enumerate(items_):
+            last = j == len(items_) - 1
+            pri = group == "pill" and key == PRIMARY
+            themed("%s-%s" % (group, key), lambda c, m, l=label, i=ic, n=len(items_), la=last, p=pri: N.pill(l, i, c, m, n, la, p), mobile=True)
     themed("intro", N.intro, mobile=True)
     themed("speaking", N.speaking, mobile=True)
-    themed("sec-built", lambda c, m: N.section("~/built", "Built", "open source + free to use", c, m), mobile=True)
-    themed("sec-oss", lambda c, m: N.section("~/open-source", "Upstream work", "%d merged  ·  %d in review" % (merged_n, open_n), c, m), mobile=True)
-    themed("sec-focus", lambda c, m: N.section("~/focus", "Focus", "", c, m), mobile=True)
-    themed("sec-speaking", lambda c, m: N.section("~/speaking", "Speaking", "", c, m), mobile=True)
+    SEC = [
+        ("sec-work", "~/work", "What I'm working on", "Three problems I can't stop thinking about.", ""),
+        ("sec-oss", "~/open-source", "In the open", "I'd rather help write the standards than complain about them.",
+         "%d accepted  \u00b7  %d in review" % (merged_n, open_n)),
+        ("sec-ach", "~/achievements", "Accepted work", "Work that maintainers merged, accepted and recognised.", ""),
+        ("sec-built", "~/built", "Built in the open", "Tools I started and maintain, and things I made so you don't start from a blank page.",
+         "%d mappings (%s)  \u00b7  %d provisions (%s)" % (maps, " + ".join(str(mm) for _, _, mm in CROSSWALKS),
+                                                          prov, " + ".join(str(p) for _, p, _ in CROSSWALKS))),
+        ("sec-newsletter", "~/newsletter", "GRC Made Simple Daily", "Everything that happened today, in one place, before your first meeting.", ""),
+        ("sec-lab", "~/lab", "GRC Practice Lab", "Practise GRC before you're responsible for it.", "free with an account"),
+        ("sec-speaking", "~/speaking", "Speaking", "Bring me in for the practical version.", ""),
+    ]
+    for key, path, eb, title, cap in SEC:
+        themed(key, lambda c, m, p=path, e=eb, t=title, cp=cap: N.section(p, e, t, cp, c, m), mobile=True)
     themed("foot", N.footer, mobile=True)
     themed("card-lab", lambda c, m: N.feature(LAB[0], LAB[1], LAB[2], LAB[3], c, m), mobile=True)
     for key, tag, title, body, metrics, kind, _ in PROJECTS:
-        themed(key, lambda c, t=tag, ti=title, bo=body, me=metrics, k=kind: N.card(t, ti, bo, me, k, c))
+        themed(key, lambda c, m, t=tag, ti=title, bo=body, me=metrics, k=kind: N.card(t, ti, bo, me, k, c, m), mobile=True)
     fh = max(N.focus_height(t) for _, _, _, t in FOCUS)
-    for key, label, ic, body in FOCUS:
-        themed("focus-" + key, lambda c, l=label, i=ic, t=body: N.focus(l, i, t, c, fh))
+    themed("focus", lambda c, m: N.grid([N.focus(l, i, t, c, fh) for _, l, i, t in FOCUS], c, m,
+                                        title=" ".join("%s. %s" % (l, t) for _, l, _, t in FOCUS)), mobile=True)
     ph = max(N.creds_height(CREDENTIALS), N.teach_height(TEACH_TEXT))
-    themed("panel-credentials", lambda c: N.creds(CREDENTIALS, c, ph))
-    themed("panel-teaching", lambda c: N.teach(LEARNERS, "active users", "in %s countries" % COUNTRIES, TEACH_TEXT, c, ph))
+    themed("about", lambda c, m: N.grid([N.creds(CREDENTIALS, c, ph),
+                                        N.teach(LEARNERS, "active users", "in %s countries" % COUNTRIES, TEACH_TEXT, c, ph)], c, m,
+                                       title="Credentials: %s. Teaching: %s active users in %s countries. %s" % (
+                                           ", ".join(CREDENTIALS), LEARNERS, COUNTRIES, TEACH_TEXT)), mobile=True)
+    build_site_panels()
+
+
+def build_site_panels():
+    if not SITE_DATA:
+        return
+    ach = SITE_DATA.get("achievements") or {}
+    badges = [dict(b, uri=_embed(b["img"], 112, jpeg=True)) for b in ach.get("badges", []) if b.get("img")]
+    badges = [b for b in badges if b["uri"]]
+    tiles = [dict(t, uri=_embed(t["logo"]) if t.get("logo") else None) for t in ach.get("tiles", [])]
+    if badges or tiles:
+        shown, more = tiles[:ACH_SHOW], tiles[ACH_SHOW:]
+        for c in K.MODES:
+            write("assets/%s/achievements.svg" % c["mode"], N.achievements(badges, shown, more, c, "d"))
+            write("assets/%s/achievements-m.svg" % c["mode"], N.achievements(badges, tiles[:8], tiles[8:], c, "m"))
+    nl = SITE_DATA.get("newsletter") or {}
+    if nl.get("published"):
+        latest = [(e.get("date", ""), e.get("title", "")) for e in nl.get("latest", [])[:3]]
+        logo = _embed("assets/home/img/gms-logo.png", 80)
+        for c in K.MODES:
+            write("assets/%s/newsletter.svg" % c["mode"], N.newsletter(nl["published"], latest, logo, c, "d"))
+            write("assets/%s/newsletter-m.svg" % c["mode"], N.newsletter(nl["published"], latest, logo, c, "m"))
 
 
 LINKS = {"website": "https://johnbjoseph-cybersec.github.io/", "lab": "https://grclab.purplecop.io",
@@ -205,12 +313,10 @@ def pills_md(group, items):
 
 
 def projects_md():
+    """One full-width card per row (each its own link); mobile gets the stacked 420 version."""
     out = []
-    for i in range(0, len(PROJECTS), 2):
-        cells = []
-        for key, tag, title, body, metrics, kind, url in PROJECTS[i:i + 2]:
-            cells.append('  <a href="%s">%s</a>' % (url, pic(key, "%s. %s" % (title, body), 'width="406"')))
-        out.append("<p>\n%s\n</p>" % "\n".join(cells))
+    for key, tag, title, body, metrics, kind, url in PROJECTS:
+        out.append('<a href="%s">%s</a>' % (url, pic2(key, "%s. %s" % (title, body), 'width="100%"')))
     return "\n\n".join(out)
 
 
@@ -231,6 +337,8 @@ def status_style(d):
         return "MERGED", "#7B00FF", "#ffffff"
     if s == "accepted":
         return "ACCEPTED", "#5b21b6", "#ffffff"
+    if s == "recognised":
+        return "RECOGNISED", "#3ccf91", "#06231a"
     if kind == "PR":
         return "OPEN PR", "#e9ddff", "#3b1a8a"
     return "PROPOSED", "#e9ddff", "#3b1a8a"
@@ -268,10 +376,11 @@ def rows_md(items, label_fn):
 
 def tables(data):
     byid = {d["id"]: d for d in data}
-    merged = sorted([d for d in data if d.get("status", "").lower() in MERGED_STATES],
+    merged = sorted([d for d in data if d.get("status", "").lower() in WON_STATES],
                     key=lambda d: (d.get("date", ""), d["id"]), reverse=True)
     flag = flagship_rows(data)
-    open_n = sum(1 for d in data if d.get("status", "").lower() not in MERGED_STATES)
+    open_n = sum(1 for d in data if d.get("status", "").lower() not in WON_STATES)
+    acc_n = sum(1 for d in merged if d.get("status", "").lower() in MERGED_STATES)
     keep = {d["id"] + suf for d in merged + flag for suf in (".svg", "-m.svg")}
     for mode in ("light", "dark"):
         cdir = os.path.join(ROOT, "assets", "rows", mode)
@@ -282,7 +391,8 @@ def tables(data):
     for c in K.MODES:
         for m in ("d", "m"):
             suf = "-m" if m == "m" else ""
-            write("assets/%s/sub-merged%s.svg" % (c["mode"], suf), N.subhead("Contributions accepted", "%d merged or accepted upstream" % len(merged), c, m))
+            write("assets/%s/sub-merged%s.svg" % (c["mode"], suf), N.subhead(
+                "Contributions accepted", "%d merged or accepted  \u00b7  %d recognised" % (acc_n, len(merged) - acc_n), c, m, dot=c["ok"]))
             write("assets/%s/sub-flagship%s.svg" % (c["mode"], suf), N.subhead("Flagship proposals in review", "open, not merged", c, m))
     mt = rows_md(merged, lambda d: status_style(d)[0])
     ft = rows_md(flag, lambda d: status_style(d)[0])
@@ -302,7 +412,7 @@ def tables(data):
     for c in K.MODES:
         write("assets/%s/chart.svg" % c["mode"], N.chart(data, parse_ref, c, "d"))
         write("assets/%s/chart-m.svg" % c["mode"], N.chart(data, parse_ref, c, "m"))
-    return mt, ft, len(merged), open_n
+    return mt, ft, acc_n, open_n
 
 
 # ------------------------------------------------------------------ README
@@ -357,7 +467,10 @@ def main():
     a = ap.parse_args()
     data = json.load(open(a.data, encoding="utf-8"))
     mt, ft, merged_n, open_n = tables(data)
-    build_static(merged_n, open_n)
+    recog_n = sum(1 for d in data if d.get("status", "").lower() == "recognised")
+    orgs_n = len({d.get("org", "").lower() for d in data
+                  if d.get("status", "").lower() in WON_STATES and d.get("org", "").lower() != "johnbjoseph-cybersec"})
+    build_static(merged_n, open_n, len(data), recog_n, orgs_n)
     tpl = open(os.path.join(HERE, "README.template.md"), encoding="utf-8").read()
     tpl = tpl.replace("{{merged_table}}", mt).replace("{{flagship_table}}", ft)
     tpl = tpl.replace("{{asof}}", datetime.date.today().isoformat()).replace("{{projects}}", projects_md())
