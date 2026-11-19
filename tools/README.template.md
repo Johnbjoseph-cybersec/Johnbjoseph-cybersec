@@ -5,7 +5,7 @@
 
 {{pic2 ticker|Latest activity from the contributions ledger, refreshed automatically.|width="100%"}}
 
-{{pic2 stats|12,000+ Practice Lab learners in 34 countries. 442 regulation mappings (157 India AI + 285 India OT). 147 provisions verified against primary text (48 + 99). {{merged_n}} merged upstream, {{open_n}} open and in review.|width="100%"}}
+{{pic2 stats|12,000+ Practice Lab learners in 34 countries. 442 regulation mappings (157 India AI + 285 India OT). 147 provisions verified against primary text (48 + 99). {{merged_n}} contributions accepted, {{open_n}} open and in review.|width="100%"}}
 
 {{pic2 intro|I lead product and technology at Purplecop Security, where we build compliance automation for GRC, AI governance and privacy. My work sits where three shifts meet: AI agents acting on real systems, AI regulation becoming enforceable, and the move to post-quantum cryptography.|width="100%"}}
 
@@ -17,11 +17,11 @@
 
 <sub>Lab source: [Johnbjoseph-cybersec.github.io](https://github.com/Johnbjoseph-cybersec/Johnbjoseph-cybersec.github.io) · Template downloads: [AI System Inventory and Risk Register](https://johnbjoseph-cybersec.github.io/grc-made-simple-templates/templates/GRC-Made-Simple_AI-System-Inventory-and-Risk-Register.xlsx) · [Crypto Inventory and PQC Migration](https://johnbjoseph-cybersec.github.io/grc-made-simple-templates/templates/GRC-Made-Simple_Crypto-Inventory-and-PQC-Migration-Workbook.xlsx) · [AI Vendor Due-Diligence Questionnaire](https://johnbjoseph-cybersec.github.io/grc-made-simple-templates/templates/GRC-Made-Simple_AI-Vendor-Due-Diligence-Questionnaire.xlsx) · [DPDP Readiness Checklist](https://johnbjoseph-cybersec.github.io/grc-made-simple-templates/templates/GRC-Made-Simple_DPDP-Readiness-Checklist.xlsx)</sub>
 
-{{pic2 sec-oss|Upstream work. {{merged_n}} merged or accepted, {{open_n}} in review.|width="100%"}}
+{{pic2 sec-oss|Contributions I did. {{merged_n}} accepted, {{open_n}} open and in review.|width="100%"}}
 
 {{pic2 chart|All {{total_n}} contributions to other people's repositories, by day: merged or accepted, open PRs and proposals.|width="100%"}}
 
-{{pic2 sub-merged|Merged and accepted|width="100%"}}
+{{pic2 sub-merged|Contributions accepted|width="100%"}}
 
 {{merged_table}}
 

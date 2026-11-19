@@ -163,7 +163,7 @@ def build_static(merged_n, open_n):
         (LEARNERS, "Practice Lab learners", "active users, %s countries" % COUNTRIES),
         (str(maps), "regulation mappings", " + ".join("%d %s" % (mm, n) for n, _, mm in CROSSWALKS)),
         (str(prov), "provisions verified", " + ".join("%d %s" % (p, n) for n, p, _ in CROSSWALKS)),
-        (str(merged_n), "merged upstream", "+%d open, in review" % open_n),
+        (str(merged_n), "contributions accepted", "+%d open, in review" % open_n),
     ]
     themed("stats", lambda c, m: N.stats(items, c, m), mobile=True)
     for group, items in (("pill", PILLS), ("pfoot", FOOTER)):
@@ -282,7 +282,7 @@ def tables(data):
     for c in K.MODES:
         for m in ("d", "m"):
             suf = "-m" if m == "m" else ""
-            write("assets/%s/sub-merged%s.svg" % (c["mode"], suf), N.subhead("Merged and accepted", "%d merged or accepted" % len(merged), c, m))
+            write("assets/%s/sub-merged%s.svg" % (c["mode"], suf), N.subhead("Contributions accepted", "%d merged or accepted upstream" % len(merged), c, m))
             write("assets/%s/sub-flagship%s.svg" % (c["mode"], suf), N.subhead("Flagship proposals in review", "open, not merged", c, m))
     mt = rows_md(merged, lambda d: status_style(d)[0])
     ft = rows_md(flag, lambda d: status_style(d)[0])
