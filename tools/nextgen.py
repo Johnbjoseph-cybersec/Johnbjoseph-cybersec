@@ -796,6 +796,7 @@ def row(dd, label, ref_txt, c, m="d"):
     a = c["accent"]
     W = 840 if m == "d" else 420
     merged = label in WON_LABELS
+    logo = dd.get("logo_uri")
     # The site's chips: won = solid green, open = amber outline.
     pill_fill = c["ok"] if merged else "none"
     pill_ink = c["ok_ink"] if merged else a
@@ -804,20 +805,26 @@ def row(dd, label, ref_txt, c, m="d"):
     b = []
     if m == "d":
         rw = width(ref_txt, "mb", 11.5)
-        tl = wrap(dd["title"], "r", 13.5, W - 244 - 20 - rw - 28, 3)
-        nl, nsz = name_lines(dd["project"], 210)
+        # Official organisation logo in a white tile on the left (John, 2026-11-20); text column starts after it.
+        lg = 44 if logo else 0
+        lx = 20 + lg + (14 if logo else 0)
+        tx0 = 284 if logo else 244
+        tl = wrap(dd["title"], "r", 13.5, W - tx0 - 20 - rw - 28, 3)
+        nl, nsz = name_lines(dd["project"], tx0 - lx - 34)
         hb = 84 if len(nl) == 1 else 102
         H = max(84 if len(tl) <= 2 else 100, hb)
         b.append('<rect x=".5" y=".5" width="%d" height="%d" rx="10" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel"], c["hair"]))
         oy = (H - hb) / 2
-        b.append('<rect x="20.5" y="%s" width="%s" height="19" rx="9.5" fill="%s" stroke="%s"/>' % (_fmt(16.5 + oy), _fmt(pw), pill_fill, pill_stroke))
-        b.append(mono(29.5, 29.5 + oy, label, 9.5, pill_ink, bold=True, track=0.8))
+        if logo:
+            b.append(_img(logo, 20, (H - lg) / 2, lg, lg, 10, "rl" + m, bg="#ffffff"))
+        b.append('<rect x="%s" y="%s" width="%s" height="19" rx="9.5" fill="%s" stroke="%s"/>' % (_fmt(lx + .5), _fmt(16.5 + oy), _fmt(pw), pill_fill, pill_stroke))
+        b.append(mono(lx + 9.5, 29.5 + oy, label, 9.5, pill_ink, bold=True, track=0.8))
         for i, ln in enumerate(nl):
-            b.append(text(20, 58 + oy + i * 17, ln, "s", nsz, c["ink"]))
-        b.append(mono(20, 74 + oy + (len(nl) - 1) * 17, dd.get("area", ""), 10, c["mute"]))
+            b.append(text(lx, 58 + oy + i * 17, ln, "s", nsz, c["ink"]))
+        b.append(mono(lx, 74 + oy + (len(nl) - 1) * 17, dd.get("area", ""), 10, c["mute"]))
         ty = H / 2 + 5 - (len(tl) - 1) * 10.5
         for i, ln in enumerate(tl):
-            b.append(text(244, ty + i * 21, ln, "r", 13.5, c["body"]))
+            b.append(text(tx0, ty + i * 21, ln, "r", 13.5, c["body"]))
         b.append(mono(W - 20, H / 2 + 4, ref_txt, 11.5, a, anchor="end", bold=True))
         b[1:1] = []
     else:
@@ -827,19 +834,22 @@ def row(dd, label, ref_txt, c, m="d"):
         b.append('<rect x="18.5" y="16.5" width="%s" height="19" rx="9.5" fill="%s" stroke="%s"/>' % (_fmt(pw), pill_fill, pill_stroke))
         b.append(mono(27.5, 29.5, label, 9.5, pill_ink, bold=True, track=0.8))
         b.append(mono(W - 18, 30, ref_txt, 10.5, a, anchor="end", bold=True))
-        nl, nsz = name_lines(dd["project"], W - 36)
+        nx = 18 + (50 if logo else 0)
+        nl, nsz = name_lines(dd["project"], W - nx - 18)
         ex = (len(nl) - 1) * 17
         H += ex
         b[0] = '<rect x=".5" y=".5" width="%d" height="%d" rx="10" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel"], c["hair"])
+        if logo:
+            b.append(_img(logo, 18, 47 + ex / 2, 38, 38, 9, "rl" + m, bg="#ffffff"))
         for i, ln in enumerate(nl):
-            b.append(text(18, 62 + i * 17, ln, "s", nsz, c["ink"]))
-        b.append(mono(18, 79 + ex, dd.get("area", ""), 9.5, c["mute"]))
+            b.append(text(nx, 62 + i * 17, ln, "s", nsz, c["ink"]))
+        b.append(mono(nx, 79 + ex, dd.get("area", ""), 9.5, c["mute"]))
         for i, ln in enumerate(tl):
             b.append(text(18, 104 + ex + i * 19, ln, "r", 12.5, c["body"]))
     alt = "%s: %s. %s. %s" % (label.title(), dd["project"], dd["title"], ref_txt)
     b.append(tracer(W, H, 10, c, seedof(dd["id"], m), dash=.05, base=12.0))
     if merged:
-        px = (20.5 if m == "d" else 18.5) + pw + 12
+        px = ((lx + .5) if m == "d" else 18.5) + pw + 12
         py = (26 + oy) if m == "d" else 26
         b.append('<circle class="ring" cx="%s" cy="%s" r="3.5" fill="none" stroke="%s"/><circle class="pl" cx="%s" cy="%s" r="3.5" fill="%s"/>' % (
             _fmt(px), _fmt(py), c["ok"], _fmt(px), _fmt(py), c["ok"]))

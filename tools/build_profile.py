@@ -359,13 +359,33 @@ def cell(s):
     return s.replace("|", "&#124;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", " ")
 
 
+LOGO_DIR = "assets/home/img/achievements"
+
+
+def row_logo(d):
+    """The organisation's official logo for a contribution row, from the website's achievements images
+    (the same files the site's wall shows). Hall of Fame rows use the site's seal. None -> no logo tile."""
+    names = []
+    m = re.search(r"github\.com/([^/]+)/", d.get("url", ""))
+    if m:
+        names.append("org-" + m.group(1).lower())
+    host = re.match(r"https?://([^/]+)", d.get("url", ""))
+    if host and not m:
+        names.append("site-" + host.group(1).lower().replace(".", "-"))
+    for n in names:
+        for ext in (".png", ".jpg", ".jpeg", ".webp"):
+            if os.path.exists(os.path.join(SITE, LOGO_DIR, n + ext)) or os.path.exists(os.path.join(ROOT, "assets", "embed", "96", n + ext)):
+                return _embed(LOGO_DIR + "/" + n + ext, 96)  # embed/96 holds org avatars the site has no tile for
+    return None
+
+
 def rows_md(items, label_fn):
     out = []
     for d in items:
         ref = parse_ref(d["url"])
         label = label_fn(d)
         ref_txt = ("%s #%s" % (ref[2], ref[3])) if ref else d.get("date", "")
-        dd = dict(d, title=short(d["title"], 400))
+        dd = dict(d, title=short(d["title"], 400), logo_uri=row_logo(d))
         for c in K.MODES:
             for m in ("d", "m"):
                 write("assets/rows/%s/%s%s.svg" % (c["mode"], d["id"], "-m" if m == "m" else ""), N.row(dd, label, ref_txt, c, m))
