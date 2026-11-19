@@ -251,7 +251,7 @@ def proof(x, y, W, items, c, m, css_acc):
     """The site's proof strip: number (mono 600, '+' in amber), label, source. items: (value, label, source)."""
     cols = 4 if m == "d" else 2
     cw = W / float(cols)
-    rh = 112 if m == "d" else 108
+    rh = 128 if m == "d" else 134
     vs = 30 if m == "d" else 26
     ls = 13 if m == "d" else 12
     b, css = [], ""
@@ -272,7 +272,10 @@ def proof(x, y, W, items, c, m, css_acc):
         ll = wrap(lab, "r", ls, maxw, 2)
         for j, ln in enumerate(ll):
             b.append(text(cx, cy + 22 + vs + 16 + j * (ls + 5), ln, "r", ls, c["body"]))
-        b.append(mono(cx, cy + rh - 14, fit(src, "mr", 10, maxw), 10, c["mute"]))
+        sw_ = cw - (8 if col == 0 else 22)
+        sl = [src] if width(src, "mr", 9) <= sw_ else [x.strip() for x in src.split("\u00b7")]
+        for j, ln in enumerate(sl):
+            b.append(mono(cx, cy + rh - 16 - (len(sl) - 1 - j) * 13, fit(ln, "mr", 9, sw_), 9, c["mute"]))
         b.append("</g>")
     rows = (len(items) + cols - 1) // cols
     return "".join(b), rows * rh, css
@@ -720,7 +723,7 @@ def name_lines(name, maxw, size=15):
     if len(lines) > 2:
         lines = [lines[0], "".join(lines[1:])]
     fixed = []
-    for ln in lines:
+    for ln in (x.strip() for x in lines):
         while width(ln, "s", size) > maxw and len(ln) > 2:
             ln = ln[:-2] + "\u2026"
         fixed.append(ln)
@@ -1126,7 +1129,9 @@ def achievements(badges, tiles, more, c, m="d"):
         nsz = 14 if m == "d" else 12.5
         b.append(text(x0, ty + 26, fit(t["name"], "b", nsz, mw), "b", nsz, c["ink"], track=-0.01 * nsz))
         b.append(mono(x0, ty + 43, fit(t.get("sub", ""), "mr", 10, mw), 10, c["mute"]))
-        b.append(mono(x0, ty + 60, fit(_count_line(t), "mm", 9.5, mw, 0.76), 9.5, c["ok_text"], track=0.76, w="mm"))
+        cl = _count_line(t) if m == "d" else _count_line(t).replace("  \u00b7  ", " \u00b7 ")
+        csz, ctr = (9.5, 0.76) if m == "d" else (9, 0.0)
+        b.append(mono(x0, ty + 60, fit(cl, "mm", csz, mw, ctr), csz, c["ok_text"], track=ctr, w="mm"))
     rows = (nt + cols - 1) // cols
     y += rows * (th + gap) - gap
     if more:
@@ -1174,7 +1179,7 @@ def newsletter(published, latest, logo_uri, c, m="d"):
     css += ocss
     nx = P + width(str(published), "mb", 34, -1.36) + 10
     b.append(mono(nx, y - 14, "editions published", 10.5, c["mute"]))
-    b.append(mono(nx, y, "new every weekday", 10.5, c["mute"]))
+    b.append(mono(nx, y, "on LinkedIn", 10.5, c["mute"]))
     y += 24
     btn = "Subscribe on LinkedIn"
     bw = width(btn, "s", 13.5) + 16 + 9 + 40

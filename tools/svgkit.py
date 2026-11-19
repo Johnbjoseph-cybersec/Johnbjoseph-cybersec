@@ -58,16 +58,23 @@ def _xform(d, k, ox, oy):
     return "".join(out)
 
 
+def _f1(v):
+    """Glyph coordinates at 0.1 px: invisible at any zoom, and half the bytes of 0.01."""
+    s = "%.1f" % v
+    s = s.rstrip("0").rstrip(".") if "." in s else s
+    return "0" if s == "-0" else s
+
+
 def _emit(cmd, nums, k, ox, oy):
     if cmd == "Z":
         return "Z"
     if cmd == "H":
-        return "H" + _fmt(nums[0] * k + ox)
+        return "H" + _f1(nums[0] * k + ox)
     if cmd == "V":
-        return "V" + _fmt(nums[0] * k + oy)
+        return "V" + _f1(nums[0] * k + oy)
     pts = []
     for i in range(0, len(nums), 2):
-        pts.append(_fmt(nums[i] * k + ox) + " " + _fmt(nums[i + 1] * k + oy))
+        pts.append(_f1(nums[i] * k + ox) + " " + _f1(nums[i + 1] * k + oy))
     return cmd + " ".join(pts)
 
 
