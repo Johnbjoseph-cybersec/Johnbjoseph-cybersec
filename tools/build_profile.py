@@ -147,7 +147,8 @@ PILLS = [
     ("linkedin", "LinkedIn", "in"),
 ]
 PRIMARY = "newsletter"  # the site's one amber button
-FOOTER = [("website", "Website", "globe"), ("linkedin", "LinkedIn", "in"), ("youtube", "GRC Made Simple", "play")]
+FOOTER = [("website", "Website", "globe"), ("rewindagents", "rewindagents.com", "loop"), ("linkedin", "LinkedIn", "in"),
+          ("youtube", "GRC Made Simple", "play")]
 FOCUS = [
     ("ai-security", "AI security", "shield",
      "Controls for AI agents: tool-call authorization, runtime governance, agent identity, audit trails that hold up."),
@@ -194,10 +195,10 @@ def themed(name, fn, mobile=False):
 # Itemized so each total can be checked by hand on the page.
 CROSSWALKS = [("India AI", 48, 157), ("India OT", 99, 285)]
 PROJECTS = [  # (asset, tag, title, body, metrics, motif, url)
-    ("card-rewindagents", "OPEN SOURCE", "rewindagents",
+    ("card-rewindagents", "OPEN SOURCE  \u00b7  REWINDAGENTS.COM", "rewindagents",
      "Undo for AI coding agents, including rm -rf: record every step, take back a step, a file or a session. Hooks verified live in Claude Code, Codex, Cursor, Gemini CLI and Copilot CLI.",
      [("5", "verified live"), ("0", "network calls")], "ledger",
-     "https://github.com/Johnbjoseph-cybersec/rewindagents"),
+     "https://rewindagents.com"),  # the product site, not the repo (John, 2026-11-20); the repo is pinned above
     ("card-ai-crosswalk", "CROSSWALK", "India AI Regulation Crosswalk",
      "RBI FREE-AI, the DPDP Act and Rules, and CERT-In mapped to ISO/IEC 42001, NIST AI RMF, the EU AI Act and FINOS. Every quote checked against the primary text.",
      [("48", "provisions"), ("157", "mappings")], "crosswalk",
@@ -299,7 +300,7 @@ def build_site_panels():
 LINKS = {"website": "https://johnbjoseph-cybersec.github.io/", "lab": "https://grclab.purplecop.io",
          "youtube": "https://www.youtube.com/@GRCMadeSimple",
          "newsletter": "https://www.linkedin.com/newsletters/grc-made-simple-7493284804747251713/",
-         "linkedin": "https://www.linkedin.com/in/john-bj/"}
+         "linkedin": "https://www.linkedin.com/in/john-bj/", "rewindagents": "https://rewindagents.com"}
 
 
 def pills_md(group, items):

@@ -542,6 +542,17 @@ def grid(panels, c, m, cols=2, gap=ROW_GAP, title=""):
     return nest(W, y - gap, kids, title)
 
 
+def card_tag(x, y, tag, c, size=10.5):
+    """Card category label. 'OPEN SOURCE  ·  REWINDAGENTS.COM': the part after the dot is a link target and is
+    drawn in the accent so the domain stands out (John, 2026-11-20: "rewindagents.com is nowhere highlighted")."""
+    if "\u00b7" not in tag:
+        return label(x, y, tag, c, size)
+    head, dom = [t.strip() for t in tag.split("\u00b7", 1)]
+    head_s = head.upper() + "  \u00b7  "
+    hw = width(head_s, "mm", size, size * 0.12)
+    return label(x, y, head_s, c, size) + label(x + hw, y, dom, c, size, color=c["accent"])
+
+
 def card(tag, title, body, metrics, kind, c, m="m"):
     """Site tile: mono category label, title, body, footer row of big number + mono unit, arrow (link card).
     m="d": the full-width (840) row version; m="m": the 420 stacked version."""
@@ -550,7 +561,7 @@ def card(tag, title, body, metrics, kind, c, m="m"):
     W, H = 420, CARD_H
     b = ['<rect x=".5" y=".5" width="%d" height="%d" rx="16" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel2"], c["hair"])]
     b.append('<rect x="24" y="23" width="7" height="7" rx="1.5" fill="%s"/>' % c["brand"])
-    b.append(label(38, 31, tag, c, 10.5))
+    b.append(card_tag(38, 31, tag, c))
     b.append(arrow(W - 40, 18, c["mute"]))
     tl = wrap(title, "b", 19, W - 48, 2)
     y = 64
@@ -585,7 +596,7 @@ def card_wide(tag, title, body, metrics, kind, c):
     H = max(176, int(64 + 26 * (len(tl) - 1) + 12 + 22 * len(bl) + 18))
     b = ['<rect x=".5" y=".5" width="%d" height="%d" rx="16" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel2"], c["hair"])]
     b.append('<rect x="24" y="23" width="7" height="7" rx="1.5" fill="%s"/>' % c["brand"])
-    b.append(label(38, 31, tag, c, 10.5))
+    b.append(card_tag(38, 31, tag, c))
     b.append(arrow(W - 40, 18, c["mute"]))
     y = 64
     for ln in tl:
