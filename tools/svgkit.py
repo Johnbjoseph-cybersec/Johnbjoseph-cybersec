@@ -1,8 +1,8 @@
 """svgkit: tiny stdlib SVG toolkit for the profile README.
 
 GitHub renders README SVGs as plain images: no web fonts, no scripts. So all text is OUTLINED
-from Poppins (tools/glyphs.json, made once by extract_glyphs.py) and every asset looks the
-same on every device. Nothing here needs a third-party package.
+from the website's typefaces, Inter Tight and JetBrains Mono (tools/glyphs*.json, made once by
+extract_glyphs.py), and every asset looks the same on every device. Nothing here needs a third-party package.
 """
 import json
 import os
@@ -11,18 +11,28 @@ from xml.sax.saxutils import escape
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 _G = json.load(open(os.path.join(HERE, "glyphs.json")))
-_G.update(json.load(open(os.path.join(HERE, "glyphs_mono.json"))))  # "mr"/"mb": JetBrains Mono (OFL)
+_G.update(json.load(open(os.path.join(HERE, "glyphs_mono.json"))))  # "mr"/"mm"/"mb": JetBrains Mono 400/500/600 (OFL)
 
-# Palette: see DARK/LIGHT below. Poppins + JetBrains Mono, outlined.
-# Black and gold. Panels are black in BOTH GitHub themes (John, 2026-11-13: "the dark mode, in black
-# and goldish"); only the transparent pieces (section heads, footer) switch ink via page_* keys.
+# Palette: the website's tokens (johnbjoseph-cybersec.github.io, redesign 2026-11, John approved 2026-11-19):
+# navy family, ONE amber accent (#febd59), green (#3ccf91) for status only (merged / accepted / recognised).
+# Inter Tight + JetBrains Mono, outlined. Dark = the site. Light = the same roles on a light ground; amber text
+# is darkened there so it stays readable on white, amber fills/bars keep the site's amber.
 DARK = dict(
-    mode="dark", ground="#0a0907", ground2="#050403", panel="#100e0b", hair="#2b2518",
-    ink="#f7f1e3", body="#cfc5ad", mute="#8d8470", accent="#e3b84f", brand="#c9971f",
-    node="#0a0907", line="#8a6a1c", chipbg="#18150f", chipink="#f1e2b8",
-    page_ink="#f7f1e3", page_mute="#8d8470", page_hair="#2b2518", page_acc="#e3b84f",
+    mode="dark", ground="#0a1119", ground2="#0f1925", panel="#0f1925", panel2="#152231", panel3="#1c2c3d",
+    hair="#223040", hair2="#2e3c4b", ink="#f2f3f0", body="#a9b3be", mute="#76838f",
+    accent="#febd59", brand="#febd59", acc_ink="#0f1925", acc_soft="#2a2a22",
+    ok="#3ccf91", ok_text="#3ccf91", ok_ink="#06231a",
+    node="#0a1119", line="#febd59", chipbg="#18263a", chipink="#d5dbe1",
+    page_ink="#f2f3f0", page_body="#a9b3be", page_mute="#76838f", page_hair="#2a3441", page_acc="#febd59", page_bar="#febd59",
 )
-LIGHT = dict(DARK, mode="light", page_ink="#14110b", page_mute="#6e6552", page_hair="#e4dcc6", page_acc="#9a7210")
+LIGHT = dict(
+    mode="light", ground="#f6f8f9", ground2="#ffffff", panel="#ffffff", panel2="#f7f9fa", panel3="#eef2f5",
+    hair="#e1e6ea", hair2="#cfd7de", ink="#0f1925", body="#3e4c5a", mute="#5f6c79",
+    accent="#a15f00", brand="#f0a63a", acc_ink="#0f1925", acc_soft="#fff3dc",
+    ok="#3ccf91", ok_text="#11794a", ok_ink="#06231a",
+    node="#ffffff", line="#f0a63a", chipbg="#f1f4f6", chipink="#2a3744",
+    page_ink="#0f1925", page_body="#3e4c5a", page_mute="#5f6c79", page_hair="#d8dee4", page_acc="#a15f00", page_bar="#f0a63a",
+)
 MODES = (LIGHT, DARK)
 
 _NUM = re.compile(r"([MLHVQCZ])|(-?\d*\.?\d+)")
