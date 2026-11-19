@@ -18,7 +18,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # The evidence console is a dark terminal in both themes, like the site's own panels.
 _TERM = {'ok': '#3ccf91', 'warn': '#febd59', 'term': '#0a1119', 'termhair': '#1f2c3a', 'termink': '#f2f3f0',
          'termmute': '#76838f', 'termacc': '#febd59'}
-SIG = {"dark": dict(_TERM, dot="#17222e"), "light": dict(_TERM, dot="#e2e8ec")}
+SIG = {"dark": dict(_TERM, dot="#17222e"), "light": dict(_TERM, dot="#17222e")}  # panels are dark in both themes
 
 BASE_CSS = (
     "@keyframes fi{from{opacity:0;transform:translateY(8px)}}"
@@ -133,7 +133,7 @@ def grid_bg(W, H, c, rx=22, step=22):
         '<rect x=".5" y=".5" width="%d" height="%d" rx="%d" fill="%s" stroke="%s"/>'
         '<g clip-path="url(#cl)"><rect width="%d" height="%d" fill="url(#gd)" opacity=".9"/>'
         % (step, step, dot, W, H, rx, c["brand"], c["brand"], c["brand"], c["brand"],
-           ".10" if c["mode"] == "dark" else ".16", c["brand"], W - 1, H - 1, rx, c["ground"], c["hair2"], W, H)
+           ".10", c["brand"], W - 1, H - 1, rx, c["ground"], c["hair2"], W, H)
     )
 
 
@@ -516,12 +516,38 @@ def motif(kind, x, y, c):
 
 
 # ----------------------------------------------------------------------------------- cards
-CARD_W, CARD_H = 406, 236
+CARD_W, CARD_H = 414, 236   # two per row: 414 + 12 + 414 = 840, the full column
+ROW_GAP = 12
 
 
-def card(tag, title, body, metrics, kind, c):
-    """Site tile: mono category label, title, body, footer row of big number + mono unit, arrow (link card)."""
-    W, H = CARD_W, CARD_H
+def nest(W, H, kids, title):
+    """One row/grid SVG holding several finished panel SVGs (nested <svg x y>), so a row spans the
+    README column edge to edge with exact gaps on every screen."""
+    body = "".join(k.replace("<svg ", '<svg x="%s" y="%s" ' % (_fmt(x), _fmt(y)), 1) for k, x, y in kids)
+    return K.svg(W, H, body, title, defs=False)
+
+
+def grid(panels, c, m, cols=2, gap=ROW_GAP, title=""):
+    """panels: finished SVG strings of width CARD_W and equal height. Desktop: cols across; mobile: stacked."""
+    import re as _re
+    hs = [float(_re.search(r'height="([0-9.]+)"', p_).group(1)) for p_ in panels]
+    cols = cols if m == "d" else 1
+    W = cols * CARD_W + (cols - 1) * gap
+    kids, y = [], 0.0
+    for r in range(0, len(panels), cols):
+        rowh = max(hs[r:r + cols])
+        for j, p_ in enumerate(panels[r:r + cols]):
+            kids.append((p_, j * (CARD_W + gap), y))
+        y += rowh + gap
+    return nest(W, y - gap, kids, title)
+
+
+def card(tag, title, body, metrics, kind, c, m="m"):
+    """Site tile: mono category label, title, body, footer row of big number + mono unit, arrow (link card).
+    m="d": the full-width (840) row version; m="m": the 420 stacked version."""
+    if m == "d":
+        return card_wide(tag, title, body, metrics, kind, c)
+    W, H = 420, CARD_H
     b = ['<rect x=".5" y=".5" width="%d" height="%d" rx="16" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel2"], c["hair"])]
     b.append('<rect x="24" y="23" width="7" height="7" rx="1.5" fill="%s"/>' % c["brand"])
     b.append(label(38, 31, tag, c, 10.5))
@@ -548,6 +574,38 @@ def card(tag, title, body, metrics, kind, c):
     b.append(motif(kind, W - 24 - 104, H - 46, c))
     alt = "%s. %s %s" % (title, body, " ".join("%s %s" % mm for mm in metrics))
     b.append(tracer(W, H, 16, c, seedof(title)))
+    return svg(W, H, "".join(b), alt.strip())
+
+
+def card_wide(tag, title, body, metrics, kind, c):
+    W = 840
+    TW = 520                                   # text column; the right column holds the numbers + motif
+    tl = wrap(title, "b", 20, TW, 2)
+    bl = wrap(body, "r", 14, TW, 4)
+    H = max(176, int(64 + 26 * (len(tl) - 1) + 12 + 22 * len(bl) + 18))
+    b = ['<rect x=".5" y=".5" width="%d" height="%d" rx="16" fill="%s" stroke="%s"/>' % (W - 1, H - 1, c["panel2"], c["hair"])]
+    b.append('<rect x="24" y="23" width="7" height="7" rx="1.5" fill="%s"/>' % c["brand"])
+    b.append(label(38, 31, tag, c, 10.5))
+    b.append(arrow(W - 40, 18, c["mute"]))
+    y = 64
+    for ln in tl:
+        b.append(text(24, y, ln, "b", 20, c["ink"], track=-0.02 * 20))
+        y += 26
+    y += 6
+    for ln in bl:
+        b.append(text(24, y, ln, "r", 14, c["body"]))
+        y += 22
+    sx = 24 + TW + 36
+    b.append('<path d="M%s 24 V%d" stroke="%s"/>' % (_fmt(sx - 18.5), H - 24, c["hair"]))
+    my = 70
+    for val, lab in metrics:
+        b.append(mono(sx, my, val, 24, c["ink"], track=-0.04 * 24, w="mb"))
+        b.append(mono(sx + width(val, "mb", 24, -0.96) + 8, my - 1, lab, 10.5, c["mute"]))
+        assert sx + width(val, "mb", 24, -0.96) + 8 + width(lab, "mr", 10.5) < W - 24, (title, lab)
+        my += 36
+    b.append(motif(kind, W - 24 - 104, H - 24 - 40, c))
+    alt = "%s. %s %s" % (title, body, " ".join("%s %s" % mm for mm in metrics))
+    b.append(tracer(W, H, 16, c, seedof(title, "w")))
     return svg(W, H, "".join(b), alt.strip())
 
 
@@ -798,9 +856,11 @@ def focus(title, ic, body, c, H=None):
     lines = wrap(body, "r", 14, W - 48, 4)
     H = H or 100 + 21 * len(lines)
     b = ['<rect x=".5" y=".5" width="%d" height="%s" rx="16" fill="%s" stroke="%s"/>' % (W - 1, _fmt(H - 1), c["panel2"], c["hair"])]
-    b.append('<rect x="24" y="22" width="36" height="36" rx="10" fill="%s" stroke="%s"/>' % (c["panel3"], c["hair2"]))
-    b.append(icon_live(ic, 32, 30, 20, a, delay=-(seedof(title) % 50) / 10.0))
-    b.append(text(74, 46, title, "b", 19, c["ink"], track=-0.02 * 19))
+    b.append('<rect x="24.5" y="20.5" width="40" height="40" rx="10" fill="%s" stroke="%s"/>' % (c["panel3"], c["hair2"]))
+    b.append('<rect x="24.5" y="20.5" width="40" height="40" rx="10" fill="none" stroke="%s" class="pl" opacity=".6" style="animation-delay:-%ss"/>'
+             % (c["brand"], _fmt((seedof(title) % 26) / 10.0)))
+    b.append(K.icon(ic, 33.5, 29.5, 22, a))
+    b.append(text(78, 46, title, "b", 19, c["ink"], track=-0.02 * 19))
     for i, ln in enumerate(lines):
         b.append(text(24, 88 + 21 * i, ln, "r", 14, c["body"]))
     b.append(tracer(W, H, 16, c, seedof(title)))
@@ -987,7 +1047,7 @@ def intro(c, m="d"):
         assert 76 + tw < W - 16, sh
         b.append('<rect x="22" y="%s" width="%s" height="28" rx="10" fill="%s" fill-opacity="%s" style="transform-box:fill-box;'
                  'transform-origin:left center;transform:scaleX(.001);animation:sh%d %ss cubic-bezier(.4,0,.2,1) infinite"/>'
-                 % (_fmt(yy - 19), _fmt(tw + 66), c["brand"], ".12" if c["mode"] == "dark" else ".22", i, _fmt(cyc)))
+                 % (_fmt(yy - 19), _fmt(tw + 66), c["brand"], ".12", i, _fmt(cyc)))
         b.append('<circle cx="34" cy="%s" r="4" fill="%s" style="animation:pl 3s ease-in-out infinite;animation-delay:%ss"/>' % (
             _fmt(yy - 5), c["brand"], _fmt(t0)))
         b.append(mono(46, yy, "0%d" % (i + 1), 10.5, c["accent"], w="mm"))
@@ -998,13 +1058,16 @@ def intro(c, m="d"):
 
 def subhead(title, count, c, m="d", dot=None):
     W = 840 if m == "d" else 420
-    H = 42
+    H = 42 if m == "d" else 58
     dot = dot or c["page_bar"]
     b = ['<circle class="ring" cx="6" cy="20" r="4" fill="none" stroke="%s"/><circle class="pl" cx="6" cy="20" r="4" fill="%s"/>' % (dot, dot)]
     b.append(text(20, 26, title, "b", 17 if m == "d" else 15, c["page_ink"], track=-0.02 * 17))
-    b.append(mono(W, 25, count, 11 if m == "d" else 10, c["page_mute"], anchor="end"))
-    b.append('<path d="M0 40.5 H%d" stroke="%s"/>' % (W, c["page_hair"]))
-    b.append('<rect class="sl" x="0" y="39.75" width="40" height="1.5" rx=".75" fill="%s" style="--run:%dpx"/>' % (c["page_bar"], W - 40))
+    if m == "d":
+        b.append(mono(W, 25, count, 11, c["page_mute"], anchor="end"))
+    else:
+        b.append(mono(20, 46, count, 10, c["page_mute"]))
+    b.append('<path d="M0 %s H%d" stroke="%s"/>' % (_fmt(H - 1.5), W, c["page_hair"]))
+    b.append('<rect class="sl" x="0" y="%s" width="40" height="1.5" rx=".75" fill="%s" style="--run:%dpx"/>' % (_fmt(H - 2.25), c["page_bar"], W - 40))
     return svg(W, H, "".join(b), "%s, %s" % (title, count))
 
 
@@ -1206,7 +1269,7 @@ def newsletter(published, latest, logo_uri, c, m="d"):
         css += ("@keyframes ne%d{0%%,%s%%{opacity:0}%s%%,%s%%{opacity:1}%s%%,100%%{opacity:0}}" % (
             i, _fmt(100 * i * 3.0 / cyc), _fmt(100 * (i * 3.0 + 0.5) / cyc), _fmt(100 * (i * 3.0 + 2.5) / cyc), _fmt(100 * (i * 3.0 + 3.0) / cyc)))
         b.append('<rect x="%s" y="%s" width="%s" height="%s" rx="10" fill="%s" fill-opacity="%s" opacity="0" style="animation:ne%d %ss ease-in-out infinite"/>' % (
-            _fmt(x0 - 10), _fmt(y + 4), _fmt(xw + 20), rh - 8, c["brand"], ".08" if c["mode"] == "dark" else ".16", i, _fmt(cyc)))
+            _fmt(x0 - 10), _fmt(y + 4), _fmt(xw + 20), rh - 8, c["brand"], ".08", i, _fmt(cyc)))
         b.append('<path d="M%s %s H%s" stroke="%s"/>' % (_fmt(x0), _fmt(y + .5), _fmt(x0 + xw), c["hair"]))
         b.append(mono(x0, y + 26, dt_, 10.5, c["accent"], w="mm"))
         if i == 0:

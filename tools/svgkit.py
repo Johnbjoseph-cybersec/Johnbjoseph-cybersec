@@ -15,8 +15,7 @@ _G.update(json.load(open(os.path.join(HERE, "glyphs_mono.json"))))  # "mr"/"mm"/
 
 # Palette: the website's tokens (johnbjoseph-cybersec.github.io, redesign 2026-11, John approved 2026-11-19):
 # navy family, ONE amber accent (#febd59), green (#3ccf91) for status only (merged / accepted / recognised).
-# Inter Tight + JetBrains Mono, outlined. Dark = the site. Light = the same roles on a light ground; amber text
-# is darkened there so it stays readable on white, amber fills/bars keep the site's amber.
+# Inter Tight + JetBrains Mono, outlined.
 DARK = dict(
     mode="dark", ground="#0a1119", ground2="#0f1925", panel="#0f1925", panel2="#152231", panel3="#1c2c3d",
     hair="#223040", hair2="#2e3c4b", ink="#f2f3f0", body="#a9b3be", mute="#76838f",
@@ -25,14 +24,10 @@ DARK = dict(
     node="#0a1119", line="#febd59", chipbg="#18263a", chipink="#d5dbe1",
     page_ink="#f2f3f0", page_body="#a9b3be", page_mute="#76838f", page_hair="#2a3441", page_acc="#febd59", page_bar="#febd59",
 )
-LIGHT = dict(
-    mode="light", ground="#f6f8f9", ground2="#ffffff", panel="#ffffff", panel2="#f7f9fa", panel3="#eef2f5",
-    hair="#e1e6ea", hair2="#cfd7de", ink="#0f1925", body="#3e4c5a", mute="#5f6c79",
-    accent="#a15f00", brand="#f0a63a", acc_ink="#0f1925", acc_soft="#fff3dc",
-    ok="#3ccf91", ok_text="#11794a", ok_ink="#06231a",
-    node="#ffffff", line="#f0a63a", chipbg="#f1f4f6", chipink="#2a3744",
-    page_ink="#0f1925", page_body="#3e4c5a", page_mute="#5f6c79", page_hair="#d8dee4", page_acc="#a15f00", page_bar="#f0a63a",
-)
+# Panels are dark in BOTH GitHub themes (the website is dark; John approved dark panels 2026-11-13 and again
+# 2026-11-19). Only the transparent pieces (section heads, sub-heads, footer) switch ink via the page_* keys.
+LIGHT = dict(DARK, mode="light", page_ink="#0f1925", page_body="#3e4c5a", page_mute="#5f6c79", page_hair="#d8dee4",
+             page_acc="#a15f00", page_bar="#f0a63a")
 MODES = (LIGHT, DARK)
 
 _NUM = re.compile(r"([MLHVQCZ])|(-?\d*\.?\d+)")
@@ -84,20 +79,39 @@ def width(s, w="r", size=16, track=0.0):
     return sum(f["g"].get(c, f["g"]["?"])[0] * k + track for c in s) - (track if s else 0)
 
 
+def _gid(w, ch):
+    return "G%s_%x" % (w, ord(ch))
+
+
 def text(x, y, s, w="r", size=16, fill="#000", anchor="start", track=0.0, opacity=None):
-    """Outlined text as one <path>. y is the baseline."""
+    """Outlined text. y is the baseline. Each glyph is defined once per SVG (svg() adds the <defs>) and
+    placed with <use>, in font units inside one scale(): a fraction of the bytes of repeated outlines."""
     f = _G[w]
     k = size / f["upm"]
     tw = width(s, w, size, track)
     cx = x - (tw if anchor == "end" else tw / 2 if anchor == "middle" else 0)
     parts = []
     for c in s:
-        adv, d = f["g"].get(c, f["g"]["?"])
+        if c not in f["g"]:
+            c = "?"
+        adv, d = f["g"][c]
         if d:
-            parts.append(_xform(d, k, cx, y))
+            parts.append('<use href="#%s" x="%s" y="%s"/>' % (_gid(w, c), _f1(cx / k), _f1(y / k)))
         cx += adv * k + track
     op = ' fill-opacity="%s"' % opacity if opacity is not None else ""
-    return '<path fill="%s"%s d="%s"/>' % (fill, op, "".join(parts))
+    return '<g fill="%s"%s transform="scale(%s)">%s</g>' % (fill, op, ("%.6f" % k).rstrip("0"), "".join(parts))
+
+
+_USE = re.compile(r'href="#(G([a-z]+)_([0-9a-f]+))"')
+
+
+def glyph_defs(body):
+    seen = {}
+    for gid, w, hx in _USE.findall(body):
+        seen[gid] = (w, chr(int(hx, 16)))
+    if not seen:
+        return ""
+    return "<defs>%s</defs>" % "".join('<path id="%s" d="%s"/>' % (gid, _G[w]["g"][ch][1]) for gid, (w, ch) in sorted(seen.items()))
 
 
 def wrap(s, w, size, maxw, maxlines):
@@ -120,11 +134,11 @@ def wrap(s, w, size, maxw, maxlines):
     return lines
 
 
-def svg(wd, ht, body, title):
+def svg(wd, ht, body, title, defs=True):
     return (
         '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s" '
         'role="img" aria-label="%s"><title>%s</title>%s</svg>\n'
-        % (_fmt(wd), _fmt(ht), _fmt(wd), _fmt(ht), escape(title, {'"': "&quot;"}), escape(title), body)
+        % (_fmt(wd), _fmt(ht), _fmt(wd), _fmt(ht), escape(title, {'"': "&quot;"}), escape(title), (glyph_defs(body) if defs else "") + body)
     )
 
 

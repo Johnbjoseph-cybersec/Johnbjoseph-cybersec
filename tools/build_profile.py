@@ -82,20 +82,23 @@ def proof_items():
     return items
 
 
-def _embed(rel):
+def _embed(rel, px=64, jpeg=False):
     """data: URI for a site image. A copy is kept in assets/embed/ (downscaled once with macOS sips when available)
     so the profile still builds if the site moves, and the SVGs stay small."""
     import base64
     import shutil
     import subprocess
     name = os.path.basename(rel)
-    dst = os.path.join(ROOT, "assets", "embed", name)
+    if jpeg:  # badges are clipped to a circle, so they need no alpha; JPEG is a third of the PNG
+        name = os.path.splitext(name)[0] + ".jpg"
+    dst = os.path.join(ROOT, "assets", "embed", str(px), name)
     src = os.path.join(SITE, rel)
     if not os.path.exists(dst) and os.path.exists(src):
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copyfile(src, dst)
         try:
-            subprocess.run(["sips", "-Z", "128", dst], check=False, capture_output=True, timeout=30)
+            cmd = ["sips", "-Z", str(px)] + (["-s", "format", "jpeg", "-s", "formatOptions", "82"] if jpeg else []) + [dst]
+            subprocess.run(cmd, check=False, capture_output=True, timeout=30)
         except (OSError, subprocess.SubprocessError):
             pass
     if not os.path.exists(dst):
@@ -260,13 +263,15 @@ def build_static(merged_n, open_n, total_n, recog_n, orgs_n):
     themed("foot", N.footer, mobile=True)
     themed("card-lab", lambda c, m: N.feature(LAB[0], LAB[1], LAB[2], LAB[3], c, m), mobile=True)
     for key, tag, title, body, metrics, kind, _ in PROJECTS:
-        themed(key, lambda c, t=tag, ti=title, bo=body, me=metrics, k=kind: N.card(t, ti, bo, me, k, c))
+        themed(key, lambda c, m, t=tag, ti=title, bo=body, me=metrics, k=kind: N.card(t, ti, bo, me, k, c, m), mobile=True)
     fh = max(N.focus_height(t) for _, _, _, t in FOCUS)
-    for key, label, ic, body in FOCUS:
-        themed("focus-" + key, lambda c, l=label, i=ic, t=body: N.focus(l, i, t, c, fh))
+    themed("focus", lambda c, m: N.grid([N.focus(l, i, t, c, fh) for _, l, i, t in FOCUS], c, m,
+                                        title=" ".join("%s. %s" % (l, t) for _, l, _, t in FOCUS)), mobile=True)
     ph = max(N.creds_height(CREDENTIALS), N.teach_height(TEACH_TEXT))
-    themed("panel-credentials", lambda c: N.creds(CREDENTIALS, c, ph))
-    themed("panel-teaching", lambda c: N.teach(LEARNERS, "active users", "in %s countries" % COUNTRIES, TEACH_TEXT, c, ph))
+    themed("about", lambda c, m: N.grid([N.creds(CREDENTIALS, c, ph),
+                                        N.teach(LEARNERS, "active users", "in %s countries" % COUNTRIES, TEACH_TEXT, c, ph)], c, m,
+                                       title="Credentials: %s. Teaching: %s active users in %s countries. %s" % (
+                                           ", ".join(CREDENTIALS), LEARNERS, COUNTRIES, TEACH_TEXT)), mobile=True)
     build_site_panels()
 
 
@@ -274,7 +279,7 @@ def build_site_panels():
     if not SITE_DATA:
         return
     ach = SITE_DATA.get("achievements") or {}
-    badges = [dict(b, uri=_embed(b["img"])) for b in ach.get("badges", []) if b.get("img")]
+    badges = [dict(b, uri=_embed(b["img"], 112, jpeg=True)) for b in ach.get("badges", []) if b.get("img")]
     badges = [b for b in badges if b["uri"]]
     tiles = [dict(t, uri=_embed(t["logo"]) if t.get("logo") else None) for t in ach.get("tiles", [])]
     if badges or tiles:
@@ -285,7 +290,7 @@ def build_site_panels():
     nl = SITE_DATA.get("newsletter") or {}
     if nl.get("published"):
         latest = [(e.get("date", ""), e.get("title", "")) for e in nl.get("latest", [])[:3]]
-        logo = _embed("assets/home/img/gms-logo.png")
+        logo = _embed("assets/home/img/gms-logo.png", 80)
         for c in K.MODES:
             write("assets/%s/newsletter.svg" % c["mode"], N.newsletter(nl["published"], latest, logo, c, "d"))
             write("assets/%s/newsletter-m.svg" % c["mode"], N.newsletter(nl["published"], latest, logo, c, "m"))
@@ -308,12 +313,10 @@ def pills_md(group, items):
 
 
 def projects_md():
+    """One full-width card per row (each its own link); mobile gets the stacked 420 version."""
     out = []
-    for i in range(0, len(PROJECTS), 2):
-        cells = []
-        for key, tag, title, body, metrics, kind, url in PROJECTS[i:i + 2]:
-            cells.append('  <a href="%s">%s</a>' % (url, pic(key, "%s. %s" % (title, body), 'width="406"')))
-        out.append("<p>\n%s\n</p>" % "\n".join(cells))
+    for key, tag, title, body, metrics, kind, url in PROJECTS:
+        out.append('<a href="%s">%s</a>' % (url, pic2(key, "%s. %s" % (title, body), 'width="100%"')))
     return "\n\n".join(out)
 
 

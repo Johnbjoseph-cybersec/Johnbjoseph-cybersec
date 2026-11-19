@@ -9,12 +9,7 @@
 
 {{pic2 intro|I lead product and technology at Purplecop Security, where we build compliance automation for GRC, AI governance and privacy. My work sits where three shifts meet: AI agents acting on real systems, AI regulation becoming enforceable, and the move to post-quantum cryptography.|width="100%"}}
 
-<p>
-  {{pic focus-ai-security|AI security. Controls for AI agents: tool-call authorization, runtime governance, agent identity, audit trails that hold up.|width="406"}}
-  {{pic focus-ai-governance|AI governance. ISO/IEC 42001, the EU AI Act, NIST AI RMF and India's DPDP Act, turned into controls a team can actually operate.|width="406"}}
-  {{pic focus-pqc|Post-quantum readiness. Cryptographic inventory, crypto-agility and migration governance, framed as a risk programme rather than an algorithm swap.|width="406"}}
-  {{pic focus-grc-eng|GRC engineering. Continuous evidence instead of annual audits, controls as code, multi-framework crosswalks using NIST IR 8477 set-theory mapping.|width="406"}}
-</p>
+{{pic2 focus|Focus: AI security, AI governance, post-quantum readiness and GRC engineering. Controls for AI agents: tool-call authorization, runtime governance, agent identity, audit trails that hold up. ISO/IEC 42001, the EU AI Act, NIST AI RMF and India's DPDP Act, turned into controls a team can actually operate. Cryptographic inventory, crypto-agility and migration governance, framed as a risk programme rather than an algorithm swap. Continuous evidence instead of annual audits, controls as code, multi-framework crosswalks using NIST IR 8477 set-theory mapping.|width="100%"}}
 
 {{pic2 sec-oss|In the open. {{merged_n}} contributions accepted, {{open_n}} open and in review.|width="100%"}}
 
@@ -54,10 +49,7 @@
 
 {{pic2 speaking|Speaking. Virtual keynotes, panels and podcasts on securing AI agents, operationalising ISO/IEC 42001 and the EU AI Act, and post-quantum migration for security and GRC leaders.|width="100%"}}
 
-<p>
-  {{pic panel-credentials|Credentials: ISO/IEC 27001:2022 Lead Auditor, ISO/IEC 42001:2023 Lead Auditor, ISO/IEC 27701 Lead Auditor, CCEP, PrivacyOps, AI Security and Governance, AWS Solutions Architect, Qualys VMDR, TryHackMe Top 1%|width="406"}}
-  <a href="https://grclab.purplecop.io">{{pic panel-teaching|Teaching: 12,000+ active users in 34 countries. GRC Made Simple teaches GRC for free: the GRC Practice Lab, a YouTube channel and a daily newsletter brief on AI security, AI governance and PQC.|width="406"}}</a>
-</p>
+{{pic2 about|Credentials: ISO/IEC 27001:2022 Lead Auditor, ISO/IEC 42001:2023 Lead Auditor, ISO/IEC 27701 Lead Auditor, CCEP, PrivacyOps, AI Security and Governance, AWS Solutions Architect, Qualys VMDR, TryHackMe Top 1%. Teaching: 12,000+ active users in 34 countries. GRC Made Simple teaches GRC for free: the GRC Practice Lab, a YouTube channel and a daily newsletter brief on AI security, AI governance and PQC.|width="100%"}}
 
 {{pic2 foot||width="100%"}}
 
