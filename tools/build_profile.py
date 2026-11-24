@@ -115,6 +115,16 @@ FLAGSHIPS = [  # ledger ids, in display order
     "trivy-discussion-11625",
     "osv-scanner-97",
 ]
+# Status corrections applied on load (contributions.json is Gitty's ledger and is never edited here).
+# Audit 2026-11-24: microsoft/agent-governance-toolkit discussion #4564 - the answer was selected by the person who
+# asked (cullenmeyers), not by a Microsoft maintainer, so it is not "accepted" at Microsoft: shown as an open item and
+# counted in review. MIRRORED in ~/team-agents/dude/build_site_data.py (STATUS_OVERRIDE): change both together.
+STATUS_OVERRIDE = {
+    "agent-governance-toolkit-4564-ans": {"status": "answered"},
+}
+# Counts (same definitions as the website, see COUNT DEFINITIONS in build_site_data.py):
+#   contributions accepted = status merged or accepted; recognised is separate; open/in review = everything else;
+#   contributions in all = every ledger row; organisations = distinct GitHub owners (or site hosts) with won work.
 MERGED_STATES = {"merged", "accepted"}
 WON_STATES = MERGED_STATES | {"recognised"}  # shown green, as on the site; counts stay merged + accepted
 # John 2026-11-15: big-name work must reach "Flagship proposals" with no reminder. Any OPEN ledger row whose org is
@@ -486,11 +496,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default=os.environ.get("CONTRIBUTIONS_JSON") or os.path.join(ROOT, "..", "..", "contributions.json"))
     a = ap.parse_args()
-    data = json.load(open(a.data, encoding="utf-8"))
+    data = [dict(d, **STATUS_OVERRIDE.get(d.get("id"), {})) for d in json.load(open(a.data, encoding="utf-8"))]
     mt, ft, merged_n, open_n = tables(data)
     recog_n = sum(1 for d in data if d.get("status", "").lower() == "recognised")
-    orgs_n = len({d.get("org", "").lower() for d in data
-                  if d.get("status", "").lower() in WON_STATES and d.get("org", "").lower() != "johnbjoseph-cybersec"})
+    def org_key(d):
+        m = re.match(r"https://github\.com/([\w.-]+)/", d.get("url") or "")
+        h = re.match(r"https://([^/]+)", d.get("url") or "")
+        return m.group(1).lower() if m else (h.group(1) if h else d.get("org", "").lower())
+    orgs_n = len({org_key(d) for d in data
+                  if d.get("status", "").lower() in WON_STATES and org_key(d) != "johnbjoseph-cybersec"})
     build_static(merged_n, open_n, len(data), recog_n, orgs_n)
     tpl = open(os.path.join(HERE, "README.template.md"), encoding="utf-8").read()
     tpl = tpl.replace("{{merged_table}}", mt).replace("{{flagship_table}}", ft)

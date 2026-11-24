@@ -724,7 +724,7 @@ def chart(data, parse_ref, c, m="d"):
         b.append(mono(lx + 15, ly, lab, 10.5 if m == "d" else 9.5, c["body"]))
         lx += 15 + width(lab, "mr", 10.5 if m == "d" else 9.5) + 18
     if m == "d":
-        b.append(mono(W - 24, ly, "%d contributions to other people's repos" % len(data), 10.5, c["mute"], anchor="end"))
+        b.append(mono(W - 24, ly, "%d contributions in all" % len(data), 10.5, c["mute"], anchor="end"))
     for i in range(1, 4):
         yy = base - i * (base - top) / 4.0
         b.append('<path d="M%d %s H%d" stroke="%s" stroke-dasharray="2 5"/>' % (18, _fmt(yy), W - 18, c["hair"]))
@@ -754,7 +754,7 @@ def chart(data, parse_ref, c, m="d"):
     b.append('<style>@keyframes sw{from{transform:translateX(0)}to{transform:translateX(%dpx)}}</style>' % sw)
     mon = d0.strftime("%b %Y").upper()
     b.append(mono(left - 6, base + 40, mon, 9.5, c["mute"]))
-    alt = "Contributions by day, %s to %s: %d merged or accepted, %d open PRs, %d proposed." % (
+    alt = "Contributions by day, %s to %s: %d merged, accepted or recognised, %d open PRs, %d proposed." % (
         days[0], days[-1], counts["merged"], counts["pr"], counts["proposed"])
     b.append(tracer(W, H, 16, c, seedof("chart", m)))
     return svg(W, H, "".join(b), alt)
